@@ -1,0 +1,27 @@
+import { useLocation, Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/i18n/LanguageContext";
+
+const NotFound = () => {
+  const location = useLocation();
+  const { t } = useLanguage();
+
+  useEffect(() => {
+    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+  }, [location.pathname]);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="text-center">
+        <h1 className="mb-4 text-6xl font-display font-bold text-primary">{t.notFound.title}</h1>
+        <p className="mb-8 text-xl text-muted-foreground">{t.notFound.message}</p>
+        <Link to="/">
+          <Button size="lg">{t.notFound.returnHome}</Button>
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+export default NotFound;

@@ -1,0 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Warm Beige/Brown Theme - QurApp Design */
+    --background: 35 33% 96%; /* #F9F6F1 Beige */
+    --foreground: 24 30% 20%; /* Dark brown text */
+    
+    --card: 35 35% 98%;
+    --card-foreground: 24 30% 20%;
+    
+    --popover: 35 35% 98%;
+    --popover-foreground: 24 30% 20%;
+    
+    --primary: 24 45% 35%; /* #8B5E3C Brown */
+    --primary-foreground: 35 35% 98%;
+    
+    --secondary: 35 25% 92%;
+    --secondary-foreground: 24 30% 20%;
+    
+    --muted: 35 20% 90%;
+    --muted-foreground: 24 15% 45%;
+    
+    --accent: 80 35% 40%; /* Olive green */
+    --accent-foreground: 35 35% 98%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 35 20% 88%;
+    --input: 35 20% 90%;
+    --ring: 24 45% 35%;
+    
+    --radius: 0.75rem;
+    
+    /* Custom colors */
+    --gold: 38 65% 50%;
+    
+    /* Typography */
+    --font-display: 'Poppins', sans-serif;
+    --font-body: 'Poppins', 'Noto Sans Arabic', sans-serif;
+    
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -4px hsl(24 45% 35% / 0.08);
+    --shadow-card: 0 8px 30px -8px hsl(24 45% 35% / 0.1);
+  }
+
+  .dark {
+    --background: 24 20% 8%;
+    --foreground: 35 33% 96%;
+    
+    --card: 24 20% 10%;
+    --card-foreground: 35 33% 96%;
+    
+    --popover: 24 20% 10%;
+    --popover-foreground: 35 33% 96%;
+    
+    --primary: 38 60% 55%;
+    --primary-foreground: 24 20% 8%;
+    
+    --secondary: 24 15% 18%;
+    --secondary-foreground: 35 33% 96%;
+    
+    --muted: 24 15% 15%;
+    --muted-foreground: 35 20% 60%;
+    
+    --accent: 80 40% 50%;
+    --accent-foreground: 24 20% 8%;
+    
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 24 15% 20%;
+    --input: 24 15% 18%;
+    --ring: 38 60% 55%;
+    
+    --gold: 38 65% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--gold)) 100%);
+  }
+
+  .bg-gradient-warm {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--gold)) 100%);
+  }
+
+  .bg-gradient-subtle {
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.05) 0%, transparent 50%);
+  }
+
+  .glass {
+    @apply bg-card/80 backdrop-blur-lg border border-border/50;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  .card-elevated {
+    @apply bg-card rounded-2xl shadow-[var(--shadow-card)] border border-border/50;
+  }
+}
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fadeUp 0.6s ease-out forwards;
+  }
+  
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}
