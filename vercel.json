@@ -1,12 +1,20 @@
 {
   "rewrites": [
     {
-      "source": "/v/:id",
-      "destination": "https://api.qurapp.com/v/:id"
+      "source": "/v/:id/img.jpg",
+      "destination": "https://api.qurapp.com/v/:id/img"
     },
     {
       "source": "/v/:id/img",
       "destination": "https://api.qurapp.com/v/:id/img"
+    },
+    {
+      "source": "/v/:id",
+      "destination": "https://api.qurapp.com/v/:id"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
