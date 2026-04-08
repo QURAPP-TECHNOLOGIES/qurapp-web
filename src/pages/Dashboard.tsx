@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   Users, BookOpen, MessageSquare, Trophy,
   Bell, Search, Settings, Menu,
-  Calendar, Download, Filter, Mail, Send, Database
+  Calendar, Download, Filter, Mail, Send, Database, Image
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,8 @@ import { EmailManagement } from "@/components/dashboard/EmailManagement";
 import { NotificationManagement } from "@/components/dashboard/NotificationManagement";
 import { QuranAssetsUpload } from "@/components/dashboard/QuranAssetsUpload";
 import { QuranAssetsList } from "@/components/dashboard/QuranAssetsList";
+import { GalleryUpload } from "@/components/dashboard/GalleryUpload";
+import { GalleryList } from "@/components/dashboard/GalleryList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSEO } from "@/hooks/useSEO";
 
@@ -76,6 +78,7 @@ export default function Dashboard() {
   const navItems = [
     { label: "Dashboard", icon: Menu, id: "dashboard" },
     { label: "Quran Assets", icon: Database, id: "quran-assets" },
+    { label: "Islamic Gallery", icon: Image, id: "gallery" },
     { label: "Users", icon: Users, id: "users" },
     { label: "Emails", icon: Mail, id: "emails" },
     { label: "Notifications", icon: Send, id: "notifications" },
@@ -282,6 +285,28 @@ export default function Dashboard() {
               <BookOpen className="h-16 w-16 mx-auto mb-4 opacity-50" />
               <h2 className="text-xl font-semibold text-foreground mb-2">Content Management</h2>
               <p>Content management features coming soon</p>
+            </motion.div>
+          )}
+
+          {activeTab === "gallery" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-6"
+            >
+              <Tabs defaultValue="list" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
+                  <TabsTrigger value="list">Manage Photos</TabsTrigger>
+                  <TabsTrigger value="upload">Upload New Photo</TabsTrigger>
+                </TabsList>
+                <TabsContent value="list" className="mt-0">
+                  <GalleryList />
+                </TabsContent>
+                <TabsContent value="upload" className="mt-0">
+                  <GalleryUpload />
+                </TabsContent>
+              </Tabs>
             </motion.div>
           )}
 

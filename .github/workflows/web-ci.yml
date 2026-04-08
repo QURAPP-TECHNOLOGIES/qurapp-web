@@ -27,11 +27,12 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy to Vercel (or S3/Hosting)
+      - name: Deploy to Vercel
         uses: amondnet/vercel-action@v20
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/beta'
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: ${{ github.ref == 'refs/heads/main' && '--prod' || '' }}
           working-directory: .
