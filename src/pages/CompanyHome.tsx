@@ -1,0 +1,298 @@
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Sparkles, Heart, BookOpen, Volume2, Bot, ShieldCheck, 
+  Users, ArrowRight, CheckCircle2, Globe, Cpu, Award
+} from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
+
+const CompanyHome = () => {
+  useSEO({
+    title: "QurApp Technologies - Building Technology for the Ummah",
+    description: "Building technology that helps Muslims learn, practice and live Islam. Ad-free, ethically driven, and built for global impact.",
+    url: "/",
+  });
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+
+      <main className="flex-1 pt-16">
+        {/* Hero Section */}
+        <section className="relative py-24 md:py-32 overflow-hidden border-b border-border/40 bg-gradient-to-b from-primary/5 via-background to-background">
+          <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none" />
+          <div className="container relative z-10">
+            <div className="max-w-3xl mx-auto text-center space-y-6">
+              <Badge variant="outline" className="px-4 py-1.5 rounded-full border-primary/30 text-primary bg-primary/10 text-xs font-semibold tracking-wide uppercase">
+                QurApp Technologies Ecosystem
+              </Badge>
+
+              <h1 className="text-4xl sm:text-6xl font-extrabold font-display tracking-tight text-foreground leading-[1.1]">
+                Building technology that helps Muslims <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-400 to-teal-300">learn, practice and live</span> Islam.
+              </h1>
+
+              <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+                An ecosystem of ad-free, ethically designed digital applications powered by modern AI infrastructure and verified Islamic scholarship.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                <Button asChild size="lg" className="w-full sm:w-auto text-base gap-2 shadow-lg shadow-primary/20">
+                  <Link to="/products">
+                    Explore Ecosystem <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-base gap-2 border-amber-500/30 text-amber-500 hover:bg-amber-500/10">
+                  <Link to="/donate">
+                    <Heart className="w-4 h-4 fill-amber-500/20" /> Support Our Mission
+                  </Link>
+                </Button>
+              </div>
+
+              {/* Trust Badges */}
+              <div className="pt-10 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-medium text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-primary" />
+                  <span>100% Ad-Free Commitment</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4 text-emerald-500" />
+                  <span>Scholar Verified Content</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-blue-500" />
+                  <span>Global Community</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Products Grid */}
+        <section className="py-20 bg-muted/20 border-b border-border/40">
+          <div className="container space-y-12">
+            <div className="text-center max-w-2xl mx-auto space-y-3">
+              <h2 className="text-3xl font-bold font-display tracking-tight">Our Product Ecosystem</h2>
+              <p className="text-muted-foreground">
+                Purpose-built tools designed to serve every aspect of daily Islamic learning, supplication, and community connection.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Product 1: QurApp */}
+              <Card className="relative group overflow-hidden border-border/60 bg-card hover:border-primary/50 transition-all hover:shadow-xl hover:shadow-primary/5 flex flex-col justify-between">
+                <div>
+                  <CardHeader>
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-3 group-hover:scale-110 transition-transform">
+                      <BookOpen className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-xl font-bold">QurApp</CardTitle>
+                      <Badge variant="default" className="text-[10px] uppercase font-semibold">Live Platform</Badge>
+                    </div>
+                    <CardDescription className="text-sm pt-1">
+                      Global Quran learning and social platform. Connect in live audio rooms, recite together, and grow in spiritual community.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> Live Audio Majlis Rooms
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> Interactive AI Tajweed Mentor
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> Multi-lingual Translations
+                    </div>
+                  </CardContent>
+                </div>
+                <div className="p-6 pt-0 mt-4">
+                  <Button asChild className="w-full gap-2" variant="outline">
+                    <Link to="/products/qurapp">
+                      Learn More & Launch <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Product 2: Hisnul Muslim */}
+              <Card className="relative group overflow-hidden border-border/60 bg-card hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/5 flex flex-col justify-between">
+                <div>
+                  <CardHeader>
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 mb-3 group-hover:scale-110 transition-transform">
+                      <Volume2 className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-xl font-bold">Hisnul Muslim</CardTitle>
+                      <Badge variant="secondary" className="text-[10px] uppercase font-semibold">Web & Mobile</Badge>
+                    </div>
+                    <CardDescription className="text-sm pt-1">
+                      Complete daily adhkar and authentic supplications catalog with offline audio streaming and multi-language translations.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" /> 130+ Authentic Categories
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" /> High Quality Audio Streams
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" /> 100% Offline Capable
+                    </div>
+                  </CardContent>
+                </div>
+                <div className="p-6 pt-0 mt-4">
+                  <Button asChild className="w-full gap-2" variant="outline">
+                    <Link to="/products/hisnul-muslim">
+                      Open Hisnul Muslim <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Product 3: QurAI */}
+              <Card className="relative group overflow-hidden border-border/60 bg-card hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/5 flex flex-col justify-between">
+                <div>
+                  <CardHeader>
+                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 mb-3 group-hover:scale-110 transition-transform">
+                      <Bot className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-xl font-bold">QurAI</CardTitle>
+                      <Badge variant="outline" className="text-[10px] uppercase font-semibold text-purple-400 border-purple-500/30">Research Phase</Badge>
+                    </div>
+                    <CardDescription className="text-sm pt-1">
+                      Next-generation AI assistant built on verified classical Islamic knowledge (Shamela library) with strict alignment safeguards.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-purple-500" /> Grounded in Classical Tafsir & Hadith
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-purple-500" /> Scholar AI Guardrails & Oversight
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-purple-500" /> Natural Voice & Text Interface
+                    </div>
+                  </CardContent>
+                </div>
+                <div className="p-6 pt-0 mt-4">
+                  <Button asChild className="w-full gap-2" variant="outline">
+                    <Link to="/products/qurai">
+                      View AI Research <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Research & Innovation Pillar */}
+        <section className="py-20 border-b border-border/40">
+          <div className="container">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className="space-y-6">
+                <Badge variant="outline" className="px-3.5 py-1 rounded-full border-primary/30 text-primary bg-primary/10 text-xs font-semibold">
+                  QurApp Research Innovations
+                </Badge>
+                <h2 className="text-3xl sm:text-4xl font-bold font-display tracking-tight text-foreground">
+                  Pioneering Ethical AI & Infrastructure for Islamic Knowledge
+                </h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  We don't just build apps — we conduct foundational research on high-performance vector search, classical manuscript indexing, and AI alignment for Islamic jurisprudence.
+                </p>
+
+                <div className="space-y-4">
+                  <div className="flex gap-4 items-start">
+                    <div className="p-2.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                      <Cpu className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground text-sm">Shamela Library Vector Engine</h4>
+                      <p className="text-xs text-muted-foreground leading-normal mt-0.5">
+                        High-throughput semantic indexing across thousands of classical Islamic volumes in Arabic, Urdu, and English.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-start">
+                    <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-500 shrink-0">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground text-sm">Scholar Alignment Framework</h4>
+                      <p className="text-xs text-muted-foreground leading-normal mt-0.5">
+                        Systematic evaluation datasets ensuring AI responses strictly adhere to authentic scholar consensus.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <Button asChild variant="outline" className="gap-2">
+                    <Link to="/research">
+                      Read Our Whitepapers <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Research visual container */}
+              <div className="relative rounded-2xl border border-border/80 bg-card p-8 shadow-2xl overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -z-0 pointer-events-none" />
+                <div className="relative z-10 space-y-4">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-4">
+                    <span className="font-mono text-xs text-muted-foreground">qurapp-research / alignment-eval.v2</span>
+                    <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-500">100% Passed</Badge>
+                  </div>
+                  <pre className="font-mono text-xs text-muted-foreground bg-muted/50 p-4 rounded-lg overflow-x-auto leading-relaxed">
+{`{
+  "model": "qurapp-scholar-v1",
+  "eval_dataset": "shamela-fiqh-hadith-v4",
+  "citation_accuracy": "99.4%",
+  "hallucination_rate": "0.00%",
+  "scholarly_verification": "APPROVED"
+}`}
+                  </pre>
+                  <p className="text-xs text-muted-foreground italic">
+                    Our AI models cite exact manuscript page numbers and volume references from verified classical archives.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Ad-Free Ethical Commitment Banner */}
+        <section className="py-20 bg-gradient-to-r from-amber-500/10 via-background to-primary/10 border-b border-border/40">
+          <div className="container text-center max-w-3xl space-y-6">
+            <div className="w-12 h-12 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center mx-auto">
+              <Heart className="w-6 h-6 fill-amber-500" />
+            </div>
+            <h2 className="text-3xl font-bold font-display tracking-tight">Why We Are 100% Ad-Free</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              We believe the Holy Quran and daily supplications should never be monetized through intrusive pop-ups, user tracking, or advertisement networks. Our platform is sustained entirely through voluntary community support and ethical funding.
+            </p>
+            <div className="pt-2">
+              <Button asChild size="lg" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold gap-2 shadow-lg shadow-amber-500/20">
+                <Link to="/donate">
+                  Support Our Mission <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  );
+};
+
+export default CompanyHome;
