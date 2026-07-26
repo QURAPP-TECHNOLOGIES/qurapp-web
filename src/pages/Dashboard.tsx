@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   Users, BookOpen, MessageSquare, Trophy,
   Bell, Search, Settings, Menu,
-  Calendar, Download, Filter, Mail, Send, Database, Image
+  Calendar, Download, Filter, Mail, Send, Database, Image, Music
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,9 @@ import { QuranAssetsUpload } from "@/components/dashboard/QuranAssetsUpload";
 import { QuranAssetsList } from "@/components/dashboard/QuranAssetsList";
 import { GalleryUpload } from "@/components/dashboard/GalleryUpload";
 import { GalleryList } from "@/components/dashboard/GalleryList";
+import { HisnulMuslimAudio } from "@/components/dashboard/HisnulMuslimAudio";
+import { HisnulMuslimConfig } from "@/components/dashboard/HisnulMuslimConfig";
+import { HisnulMuslimFeedback } from "@/components/dashboard/HisnulMuslimFeedback";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSEO } from "@/hooks/useSEO";
 
@@ -78,6 +81,7 @@ export default function Dashboard() {
   const navItems = [
     { label: "Dashboard", icon: Menu, id: "dashboard" },
     { label: "Quran Assets", icon: Database, id: "quran-assets" },
+    { label: "Hisnul Muslim", icon: Music, id: "hisnul-muslim" },
     { label: "Islamic Gallery", icon: Image, id: "gallery" },
     { label: "Users", icon: Users, id: "users" },
     { label: "Emails", icon: Mail, id: "emails" },
@@ -296,15 +300,19 @@ export default function Dashboard() {
               className="space-y-6"
             >
               <Tabs defaultValue="list" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
+                <TabsList className="grid w-full grid-cols-3 max-w-xl mb-6">
                   <TabsTrigger value="list">Manage Photos</TabsTrigger>
                   <TabsTrigger value="upload">Upload New Photo</TabsTrigger>
+                  <TabsTrigger value="assets">Asset Images</TabsTrigger>
                 </TabsList>
                 <TabsContent value="list" className="mt-0">
                   <GalleryList />
                 </TabsContent>
                 <TabsContent value="upload" className="mt-0">
                   <GalleryUpload />
+                </TabsContent>
+                <TabsContent value="assets" className="mt-0">
+                  <GalleryList isGallery={false} />
                 </TabsContent>
               </Tabs>
             </motion.div>
@@ -329,6 +337,32 @@ export default function Dashboard() {
 
                 <TabsContent value="upload" className="mt-0">
                   <QuranAssetsUpload />
+                </TabsContent>
+              </Tabs>
+            </motion.div>
+          )}
+
+          {activeTab === "hisnul-muslim" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-6"
+            >
+              <Tabs defaultValue="audio" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 max-w-xl mb-6">
+                  <TabsTrigger value="audio">Manage Audio Assets</TabsTrigger>
+                  <TabsTrigger value="config">Version Configuration</TabsTrigger>
+                  <TabsTrigger value="feedback">User Feedbacks</TabsTrigger>
+                </TabsList>
+                <TabsContent value="audio" className="mt-0">
+                  <HisnulMuslimAudio />
+                </TabsContent>
+                <TabsContent value="config" className="mt-0">
+                  <HisnulMuslimConfig />
+                </TabsContent>
+                <TabsContent value="feedback" className="mt-0">
+                  <HisnulMuslimFeedback />
                 </TabsContent>
               </Tabs>
             </motion.div>

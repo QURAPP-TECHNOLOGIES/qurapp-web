@@ -25,6 +25,9 @@ const Footer = () => {
             <Link to="/for-scholars" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
               {t.footer.forScholars}
             </Link>
+            <Link to="/hisnul-muslim" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
+              {t.footer.hisnulMuslim}
+            </Link>
             <Link to="/blog" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
               {t.footer.blog}
             </Link>

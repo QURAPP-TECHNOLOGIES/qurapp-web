@@ -67,8 +67,12 @@ const Auth = () => {
       setStep("otp");
     } catch (error: any) {
       console.error("OTP Request Error:", error);
-      setErrors({ phone: error.message });
-      toast.error(error.message);
+      let friendlyMessage = error.message;
+      if (error.message === "Failed to fetch" || error.name === "TypeError") {
+        friendlyMessage = "Connection error: Could not reach the authentication server. Please check if the API server is online.";
+      }
+      setErrors({ phone: friendlyMessage });
+      toast.error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -117,8 +121,12 @@ const Auth = () => {
       }, 2000);
     } catch (error: any) {
       console.error("OTP Verification Error:", error);
-      setErrors({ otp: error.message });
-      toast.error(error.message);
+      let friendlyMessage = error.message;
+      if (error.message === "Failed to fetch" || error.name === "TypeError") {
+        friendlyMessage = "Connection error: Could not reach the authentication server. Please check if the API server is online.";
+      }
+      setErrors({ otp: friendlyMessage });
+      toast.error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }

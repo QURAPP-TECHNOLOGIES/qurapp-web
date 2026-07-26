@@ -1,33 +1,45 @@
 export const apiGatewayUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
+let refreshPromise: Promise<boolean> | null = null;
+
 export async function refreshAuthToken(): Promise<boolean> {
-    const refreshToken = localStorage.getItem("refreshToken");
-    if (!refreshToken) {
-        handleAuthFailure();
-        return false;
+    if (refreshPromise) {
+        return refreshPromise;
     }
 
-    try {
-        const refreshRes = await fetch(`${apiGatewayUrl}/api/v1/auth/refresh-token`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refreshToken }),
-        });
-
-        if (refreshRes.ok) {
-            const data = await refreshRes.json();
-            if (data.accessToken) localStorage.setItem("token", data.accessToken);
-            if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
-            return true;
-        } else {
+    refreshPromise = (async () => {
+        const refreshToken = localStorage.getItem("refreshToken");
+        if (!refreshToken) {
             handleAuthFailure();
             return false;
         }
-    } catch (e) {
-        console.error("Token refresh error", e);
-        handleAuthFailure();
-        return false;
-    }
+
+        try {
+            const refreshRes = await fetch(`${apiGatewayUrl}/api/v1/auth/refresh-token`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refreshToken }),
+            });
+
+            if (refreshRes.ok) {
+                const data = await refreshRes.json();
+                if (data.accessToken) localStorage.setItem("token", data.accessToken);
+                if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+                return true;
+            } else {
+                handleAuthFailure();
+                return false;
+            }
+        } catch (e) {
+            console.error("Token refresh error", e);
+            handleAuthFailure();
+            return false;
+        } finally {
+            refreshPromise = null;
+        }
+    })();
+
+    return refreshPromise;
 }
 
 export async function fetchWithAuth(url: string, init?: RequestInit): Promise<Response> {

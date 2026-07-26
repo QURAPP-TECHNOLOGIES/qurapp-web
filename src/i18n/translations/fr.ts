@@ -5,6 +5,7 @@ export const fr: typeof en = {
     forScholars: "Pour les Savants",
     blog: "Blog",
     getApp: "Télécharger QurApp",
+    hisnulMuslim: "Hisnul Muslim",
   },
   hero: {
     badge: "La plateforme sociale islamique #1",
@@ -194,6 +195,7 @@ export const fr: typeof en = {
     terms: "Conditions",
     contact: "Contact",
     copyright: "Tous droits réservés.",
+    hisnulMuslim: "Hisnul Muslim",
   },
   forScholars: {
     badge: "Programme Savants Vérifiés",
@@ -395,5 +397,28 @@ export const fr: typeof en = {
     badges: { sahihOnly: "Sources Sahih uniquement", noFatwa: "Pas de fatwa", adabFirst: "Adab d'abord" },
     authenticityTitle: "Authenticité islamique garantie",
     authenticityDescription: "Notre mentor IA est basé sur des sources islamiques authentiques et maintient les convenances islamiques.",
+  },
+
+  // Hisnul Muslim Page
+  hisnulMuslimPage: {
+    title: "Hisnul Muslim",
+    subtitle: "Fortress of the Muslim",
+    badge: "Standalone Mobile App",
+    description: "A beautiful, local-first supplications app based on the authentic Hisnul Muslim book. Built with Flutter, fully offline-first, and designed to help you stay consistent with your daily remembrance.",
+    downloadApk: "Download APK (Direct)",
+    googlePlay: "Get it on Google Play",
+    appStore: "Download on the App Store",
+    featuresTitle: "App Features",
+    featuresSubtitle: "Crafted with care to accompany you throughout your day.",
+    features: [
+      { title: "Daily Remembrance (Azhkar)", description: "Access morning, evening, sleeping supplications, and more, all with authentic source citations." },
+      { title: "100% Offline & Local-First", description: "No accounts, no tracking, and no internet required. All settings, bookmarks, and counters are saved locally." },
+      { title: "Digital Tasbih Counter", description: "Keep track of your counts with a clean haptic counter, sound feedback options, and custom session tracking." },
+      { title: "Custom Reminders", description: "Schedule daily timezone-aware notifications for your morning, evening, and sleep remembrance." },
+      { title: "Picture Sharing Canvas", description: "Generate beautiful custom card images from any supplication with curated background themes to share with others." },
+      { title: "Ad-Free Forever (0 Ads)", description: "Enjoy a clean, focused spiritual environment with absolutely zero ads, banners, or interruptions." },
+      { title: "15 Languages Translation", description: "Read supplications in 15 different languages with dynamic translations synced to your global app settings." },
+      { title: "Fully Duah Audio Support", description: "Listen to beautiful audio recitations of each supplication and download them for offline use." },
+    ],
   },
 };

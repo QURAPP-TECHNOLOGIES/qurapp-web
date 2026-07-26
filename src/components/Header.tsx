@@ -50,6 +50,12 @@ const Header = () => {
               {t.header.forScholars}
             </Link>
             <Link
+              to="/hisnul-muslim"
+              className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
+            >
+              {t.header.hisnulMuslim}
+            </Link>
+            <Link
               to="/blog"
               className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
             >
@@ -104,6 +110,13 @@ const Header = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 {t.header.forScholars}
+              </Link>
+              <Link
+                to="/hisnul-muslim"
+                className="text-muted-foreground hover:text-foreground transition-colors py-2 text-sm font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t.header.hisnulMuslim}
               </Link>
               <Link
                 to="/blog"
