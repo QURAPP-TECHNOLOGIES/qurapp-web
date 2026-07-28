@@ -35,6 +35,7 @@ import { HisnulMuslimConfig } from "@/components/dashboard/HisnulMuslimConfig";
 import { HisnulMuslimFeedback } from "@/components/dashboard/HisnulMuslimFeedback";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSEO } from "@/hooks/useSEO";
+import logo from "@/assets/logo.png";
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -101,8 +102,12 @@ export default function Dashboard() {
       >
         <div className="px-4 mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-primary-foreground" />
+            <div className="relative flex items-center justify-center">
+              <img
+                src={logo}
+                alt="QurApp Logo"
+                className="h-9 w-auto transition-transform group-hover:scale-105"
+              />
             </div>
             {sidebarOpen && (
               <motion.span

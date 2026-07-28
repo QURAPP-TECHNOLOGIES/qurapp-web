@@ -102,23 +102,25 @@ const Auth = () => {
       const data = await res.json();
 
       // Store tokens
-      if (data.token?.accessToken) {
-        localStorage.setItem("token", data.token.accessToken);
+      const accessToken = data.token?.accessToken || data.token || data.accessToken;
+      const refreshToken = data.token?.refreshToken || data.refreshToken;
+      const userRole = data.role || data.user?.role || (Array.isArray(data.roles) ? data.roles[0] : null) || "Admin";
+
+      if (accessToken) {
+        localStorage.setItem("token", accessToken);
       }
-      if (data.token?.refreshToken) {
-        localStorage.setItem("refreshToken", data.token.refreshToken);
+      if (refreshToken) {
+        localStorage.setItem("refreshToken", refreshToken);
       }
-      if (data.role) {
-        localStorage.setItem("role", data.role);
-      }
+      localStorage.setItem("role", userRole);
 
       setStep("success");
       toast.success("Login successful!");
 
-      // Redirect after showing success
+      // Redirect to dashboard after showing success
       setTimeout(() => {
-        navigate(data.role === 'Admin' ? "/dashboard" : "/");
-      }, 2000);
+        navigate("/dashboard");
+      }, 1500);
     } catch (error: any) {
       console.error("OTP Verification Error:", error);
       let friendlyMessage = error.message;

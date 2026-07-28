@@ -6,7 +6,7 @@ export const en = {
     getApp: "Get QurApp",
     hisnulMuslim: "Hisnul Muslim",
   },
-  
+
   // Hero Section
   hero: {
     badge: "The #1 Islamic Social Platform",
@@ -19,7 +19,7 @@ export const en = {
     builtFor: "Built for the Global Ummah",
     seeHow: "See how it works",
   },
-  
+
   // Audience Section
   audience: {
     title: "Built for the",
@@ -34,7 +34,7 @@ export const en = {
       { title: "The Global Ummah", description: "Muslims from 150+ countries united in the love of the Qur'an." },
     ],
   },
-  
+
   // Languages Section
   languages: {
     badge: "Global Reach",
@@ -42,7 +42,7 @@ export const en = {
     titleHighlight: "15 Languages",
     description: "Connecting Muslims worldwide in their native language",
   },
-  
+
   // Features Section
   features: {
     items: [
@@ -64,7 +64,7 @@ export const en = {
     ],
     joinMovement: "Join the movement",
   },
-  
+
   // How It Works Section
   howItWorks: {
     title: "Everything You Need to",
@@ -93,7 +93,7 @@ export const en = {
       },
     ],
   },
-  
+
   // Notifications Section
   notifications: {
     title: "Stay Connected to",
@@ -111,7 +111,7 @@ export const en = {
       khatmahStarting: { title: "Khatmah starting in 30 min", subtitle: "Juz 15 • 12 participants ready", time: "30m" },
     },
   },
-  
+
   // Stats Section
   stats: {
     title: "Free at the Core.",
@@ -124,7 +124,7 @@ export const en = {
       { value: "0", label: "Ads Forever" },
     ],
   },
-  
+
   // Testimonials Section
   testimonials: {
     title: "Loved by the",
@@ -149,7 +149,7 @@ export const en = {
       },
     ],
   },
-  
+
   // FAQ Section
   faq: {
     title: "Frequently Asked",
@@ -190,7 +190,7 @@ export const en = {
       },
     ],
   },
-  
+
   // Download Section
   download: {
     title: "Join the",
@@ -207,7 +207,7 @@ export const en = {
     freeDownload: "Free to download • No ads • No credit card required",
     tagline: "QurApp — Reconnecting the Ummah with the Qur'an, one verse at a time.",
   },
-  
+
   // Footer
   footer: {
     forScholars: "For Scholars",
@@ -218,7 +218,7 @@ export const en = {
     copyright: "All rights reserved.",
     hisnulMuslim: "Hisnul Muslim",
   },
-  
+
   // For Scholars Page
   forScholars: {
     badge: "Verified Scholars Program",
@@ -284,7 +284,7 @@ export const en = {
       },
     ],
   },
-  
+
   // Blog Page
   blog: {
     title: "QurApp Blog",
@@ -292,7 +292,7 @@ export const en = {
     backToBlog: "Back to Blog",
     relatedArticles: "Related Articles",
   },
-  
+
   // Privacy Page
   privacy: {
     title: "Privacy Policy",
@@ -337,7 +337,7 @@ export const en = {
       },
     },
   },
-  
+
   // Terms Page
   terms: {
     title: "Terms of Service",
@@ -384,7 +384,7 @@ export const en = {
       },
     },
   },
-  
+
   // Contact Page
   contact: {
     title: "Contact Us",
@@ -410,14 +410,14 @@ export const en = {
       description: "We'll get back to you as soon as possible.",
     },
   },
-  
+
   // Not Found Page
   notFound: {
     title: "404",
     message: "Oops! Page not found",
     returnHome: "Return to Home",
   },
-  
+
   // AI Mentor Section
   aiMentor: {
     badge: "AI-Powered Spiritual Companion",
@@ -474,8 +474,8 @@ export const en = {
     badge: "Standalone Mobile App",
     description: "A beautiful, local-first supplications app based on the authentic Hisnul Muslim book. Built with Flutter, fully offline-first, and designed to help you stay consistent with your daily remembrance.",
     downloadApk: "Download APK (Direct)",
-    googlePlay: "Get it on Google Play",
-    appStore: "Download on the App Store",
+    googlePlay: "Google Play",
+    appStore: "App Store",
     featuresTitle: "App Features",
     featuresSubtitle: "Crafted with care to accompany you throughout your day.",
     features: [

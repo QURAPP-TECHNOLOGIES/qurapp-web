@@ -34,6 +34,18 @@ const Header = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const getBrandInfo = () => {
+    if (location.pathname.includes('/hisnul-muslim')) {
+      return { title: "Hisnul Muslim", subtitle: "By QurApp" };
+    }
+    if (location.pathname.includes('/products/qurapp')) {
+      return { title: "QurApp", subtitle: "" };
+    }
+    return { title: "QurApp", subtitle: "Technologies" };
+  };
+
+  const { title, subtitle } = getBrandInfo();
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border/50 transition-all">
       <div className="container">
@@ -49,11 +61,13 @@ const Header = () => {
             </div>
             <div className="flex flex-col">
               <span className="font-display text-lg font-bold tracking-tight leading-none">
-                QurApp <span className="text-primary text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 ml-1">Tech</span>
+                {title}
               </span>
-              <span className="text-[10px] text-muted-foreground font-medium hidden sm:inline">
-                Ecosystem
-              </span>
+              {subtitle && (
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  {subtitle}
+                </span>
+              )}
             </div>
           </Link>
 

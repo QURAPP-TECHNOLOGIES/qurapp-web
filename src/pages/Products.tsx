@@ -49,11 +49,11 @@ const Products = () => {
                     <h2 className="text-2xl font-bold font-display">QurApp</h2>
                     <p className="text-xs text-muted-foreground font-mono">Global Quran Social Platform</p>
                   </div>
-                  <Badge variant="default" className="ml-auto text-xs">Live</Badge>
+                  <Badge variant="outline" className="ml-auto text-xs text-amber-500 border-amber-500/30 bg-amber-500/10">In Development</Badge>
                 </div>
 
                 <p className="text-muted-foreground leading-relaxed">
-                  QurApp is a global platform connecting Muslims worldwide through live audio rooms, collaborative Quran recitation, multi-lingual translations, and interactive Tajweed learning.
+                  QurApp is a global platform in active development designed to connect Muslims worldwide through live audio rooms, collaborative Quran recitation, multi-lingual translations, and interactive Tajweed learning.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-foreground">
@@ -78,7 +78,7 @@ const Products = () => {
                 <div className="flex flex-wrap gap-4 pt-2">
                   <Button asChild size="lg" className="gap-2">
                     <Link to="/products/qurapp">
-                      Explore QurApp <ArrowRight className="w-4 h-4" />
+                      Preview QurApp Roadmap <ArrowRight className="w-4 h-4" />
                     </Link>
                   </Button>
                 </div>
@@ -86,13 +86,13 @@ const Products = () => {
 
               <div className="lg:col-span-5 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent rounded-2xl p-8 border border-primary/20 flex flex-col justify-center space-y-4">
                 <div className="text-center space-y-2">
-                  <span className="text-4xl font-extrabold text-primary font-display">1M+</span>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold">Active Reciters Worldwide</p>
+                  <span className="text-4xl font-extrabold text-primary font-display">Roadmap</span>
+                  <p className="text-xs text-muted-foreground uppercase font-semibold">Under Active Development</p>
                 </div>
                 <div className="h-px bg-border" />
                 <div className="text-center space-y-1">
-                  <span className="text-sm font-semibold text-foreground">Available on Web, iOS & Android</span>
-                  <p className="text-xs text-muted-foreground">Download the app or join directly in browser</p>
+                  <span className="text-sm font-semibold text-foreground">Coming Soon to Mobile & Web</span>
+                  <p className="text-xs text-muted-foreground">Stay tuned for public beta access</p>
                 </div>
               </div>
             </div>
@@ -108,11 +108,11 @@ const Products = () => {
                     <h2 className="text-2xl font-bold font-display">Hisnul Muslim</h2>
                     <p className="text-xs text-muted-foreground font-mono">Daily Supplications & Adhkar</p>
                   </div>
-                  <Badge variant="secondary" className="ml-auto text-xs">Web & Mobile</Badge>
+                  <Badge className="ml-auto text-xs bg-emerald-600 hover:bg-emerald-700 text-white">Live App</Badge>
                 </div>
 
                 <p className="text-muted-foreground leading-relaxed">
-                  A standalone, 100% offline-ready supplication app built directly from authentic Hadith sources, complete with high quality audio recitations and local search.
+                  A standalone, 100% offline-ready supplication app built directly from authentic Hadith sources, available as native apps for Mobile (iOS & Android) and Desktop (macOS, Windows, Linux).
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-foreground">
@@ -122,22 +122,22 @@ const Products = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span>Audio Streaming & Cache</span>
+                    <span>Audio Recitations & Local Cache</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span>Transliteration & Meaning</span>
+                    <span>Mobile (iOS & Android)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span>Tasbih Counter & Bookmarks</span>
+                    <span>Desktop (macOS, Windows, Linux)</span>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-4 pt-2">
                   <Button asChild size="lg" variant="outline" className="gap-2 border-blue-500/30 text-blue-500 hover:bg-blue-500/10">
                     <Link to="/products/hisnul-muslim">
-                      Launch Hisnul Muslim <ArrowRight className="w-4 h-4" />
+                      View App Details <ArrowRight className="w-4 h-4" />
                     </Link>
                   </Button>
                 </div>
@@ -146,12 +146,12 @@ const Products = () => {
               <div className="lg:col-span-5 bg-gradient-to-br from-blue-500/20 via-blue-500/5 to-transparent rounded-2xl p-8 border border-blue-500/20 flex flex-col justify-center space-y-4">
                 <div className="text-center space-y-2">
                   <span className="text-4xl font-extrabold text-blue-500 font-display">100%</span>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold">Offline Capable & Private</p>
+                  <p className="text-xs text-muted-foreground uppercase font-semibold">Offline & Native Platform Support</p>
                 </div>
                 <div className="h-px bg-border" />
                 <div className="text-center space-y-1">
-                  <span className="text-sm font-semibold text-foreground">No Account Required</span>
-                  <p className="text-xs text-muted-foreground">Instant access to all daily adhkar</p>
+                  <span className="text-sm font-semibold text-foreground">Mobile & Desktop Only</span>
+                  <p className="text-xs text-muted-foreground">iOS, Android, macOS, Windows & Linux</p>
                 </div>
               </div>
             </div>

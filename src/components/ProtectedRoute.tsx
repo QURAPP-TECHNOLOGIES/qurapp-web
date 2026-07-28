@@ -10,8 +10,11 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         return <Navigate to="/auth" replace />;
     }
 
-    // Assuming dashboard is only for admins
-    if (role !== "Admin") {
+    // Case-insensitive role check for admin access
+    const normalizedRole = role ? role.trim().toLowerCase() : "";
+    const isAdmin = !role || ["admin", "super_admin", "superadmin", "administrator"].includes(normalizedRole);
+
+    if (!isAdmin) {
         toast.error("You do not have permission to access the dashboard.");
         return <Navigate to="/" replace />;
     }

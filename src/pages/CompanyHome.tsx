@@ -91,10 +91,10 @@ const CompanyHome = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-xl font-bold">QurApp</CardTitle>
-                      <Badge variant="default" className="text-[10px] uppercase font-semibold">Live Platform</Badge>
+                      <Badge variant="outline" className="text-[10px] uppercase font-semibold text-amber-500 border-amber-500/30 bg-amber-500/10">In Development</Badge>
                     </div>
                     <CardDescription className="text-sm pt-1">
-                      Global Quran learning and social platform. Connect in live audio rooms, recite together, and grow in spiritual community.
+                      Global Quran learning and social platform in active development. Connecting Muslims in live audio rooms and Tajweed practice.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2 text-xs text-muted-foreground">
@@ -112,7 +112,7 @@ const CompanyHome = () => {
                 <div className="p-6 pt-0 mt-4">
                   <Button asChild className="w-full gap-2" variant="outline">
                     <Link to="/products/qurapp">
-                      Learn More & Launch <ArrowRight className="w-4 h-4" />
+                      Preview Product <ArrowRight className="w-4 h-4" />
                     </Link>
                   </Button>
                 </div>
@@ -127,10 +127,10 @@ const CompanyHome = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-xl font-bold">Hisnul Muslim</CardTitle>
-                      <Badge variant="secondary" className="text-[10px] uppercase font-semibold">Web & Mobile</Badge>
+                      <Badge className="text-[10px] uppercase font-semibold bg-emerald-600 hover:bg-emerald-700 text-white">Live App</Badge>
                     </div>
                     <CardDescription className="text-sm pt-1">
-                      Complete daily adhkar and authentic supplications catalog with offline audio streaming and multi-language translations.
+                      Complete daily adhkar and authentic supplications app. Native mobile (iOS/Android) and desktop apps with 100% offline support.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2 text-xs text-muted-foreground">
@@ -138,17 +138,17 @@ const CompanyHome = () => {
                       <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" /> 130+ Authentic Categories
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" /> High Quality Audio Streams
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" /> Mobile (iOS/Android) & Desktop
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" /> 100% Offline Capable
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" /> 100% Offline & High Quality Audio
                     </div>
                   </CardContent>
                 </div>
                 <div className="p-6 pt-0 mt-4">
                   <Button asChild className="w-full gap-2" variant="outline">
                     <Link to="/products/hisnul-muslim">
-                      Open Hisnul Muslim <ArrowRight className="w-4 h-4" />
+                      View App Details <ArrowRight className="w-4 h-4" />
                     </Link>
                   </Button>
                 </div>
