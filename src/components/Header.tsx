@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Moon, Sun, Heart, Sparkles, ChevronDown } from "lucide-react";
 import logo from "@/assets/logo.png";
+import logoHsn from "@/assets/logo-hsn.png";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
   DropdownMenu,
@@ -36,15 +37,15 @@ const Header = () => {
 
   const getBrandInfo = () => {
     if (location.pathname.includes('/hisnul-muslim')) {
-      return { title: "Hisnul Muslim", subtitle: "By QurApp" };
+      return { title: "Hisnul Muslim", subtitle: "By QurApp", logoImg: logoHsn };
     }
     if (location.pathname.includes('/products/qurapp')) {
-      return { title: "QurApp", subtitle: "" };
+      return { title: "QurApp", subtitle: "", logoImg: logo };
     }
-    return { title: "QurApp", subtitle: "Technologies" };
+    return { title: "QurApp", subtitle: "Technologies", logoImg: logo };
   };
 
-  const { title, subtitle } = getBrandInfo();
+  const { title, subtitle, logoImg } = getBrandInfo();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border/50 transition-all">
@@ -54,8 +55,8 @@ const Header = () => {
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="relative flex items-center justify-center">
               <img 
-                src={logo} 
-                alt="QurApp Logo" 
+                src={logoImg} 
+                alt={`${title} Logo`} 
                 className="h-9 w-auto transition-transform group-hover:scale-105"
               />
             </div>
@@ -171,9 +172,9 @@ const Header = () => {
             </Button>
 
             <Button asChild size="sm" className="gap-1.5 shadow-sm">
-              <Link to="/products/qurapp">
-                <Sparkles className="w-3.5 h-3.5" /> Get App
-              </Link>
+              <a href="/#download">
+                <Sparkles className="w-3.5 h-3.5" /> Join Waitlist
+              </a>
             </Button>
           </div>
 
@@ -270,9 +271,9 @@ const Header = () => {
                 </Link>
               </Button>
               <Button asChild size="default" className="w-full justify-center">
-                <Link to="/products/qurapp" onClick={() => setIsMenuOpen(false)}>
-                  Get QurApp
-                </Link>
+                <a href="/#download" onClick={() => setIsMenuOpen(false)}>
+                  Join Waitlist
+                </a>
               </Button>
             </div>
           </div>

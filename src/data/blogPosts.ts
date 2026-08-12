@@ -136,7 +136,7 @@ The path to Hifz is filled with moments of joy, frustration, breakthrough, and d
     date: "Dec 5, 2024",
     readTime: "8 min read",
     category: "Community Stories",
-    thumbnail: "https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=800&h=500&fit=crop",
+    thumbnail: "https://images.unsplash.com/photo-1587617425953-9075d28b8c46?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: 5,
@@ -167,7 +167,7 @@ The best time is ultimately the time you can commit to consistently. Experiment 
     date: "Nov 28, 2024",
     readTime: "6 min read",
     category: "Tips & Guidance",
-    thumbnail: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=500&fit=crop",
+    thumbnail: "https://images.unsplash.com/photo-1616422840391-fa670d4b2ae7?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: 6,
@@ -206,7 +206,7 @@ Every child learns at their own pace. Focus on fostering love rather than rushin
     date: "Nov 20, 2024",
     readTime: "9 min read",
     category: "Family",
-    thumbnail: "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800&h=500&fit=crop",
+    thumbnail: "https://images.unsplash.com/photo-1589995635011-078e0bb91d11?q=80&w=800&auto=format&fit=crop",
   },
 ];
 

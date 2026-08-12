@@ -1,17 +1,49 @@
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Apple, Play, ChevronRight, Monitor } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import featuredScreen from "@/assets/app-screenshots/featured-screen.png";
 import { useLanguage } from "@/i18n/LanguageContext";
 import AnimatedHeroBackground from "./hero/AnimatedHeroBackground";
+import { useToast } from "@/hooks/use-toast";
+
+
+const getRotatingHighlights = (lang: string, defaultHighlight: string) => {
+  switch (lang) {
+    case "ar":
+      return ["— معًا", "— في انسجام", "— بالإيمان", "— عالميًا"];
+    case "fa":
+      return ["— با هم", "— در هماهنگی", "— در ایمان", "— در سراسر جهان"];
+    case "ur":
+      return ["— مل کر", "— ہم آہنگی میں", "— ایمان میں", "— عالمی سطح پر"];
+    case "tr":
+      return ["— Birlikte", "— Uyum İçinde", "— İmanla", "— Küresel Olarak"];
+    case "fr":
+      return ["— Ensemble", "— En Harmonie", "— En Foi", "— Globalement"];
+    case "es":
+      return ["— Juntos", "— En Armonía", "— En la Fe", "— Globalmente"];
+    case "en":
+    default:
+      return ["— Together", "— In Harmony", "— In Faith", "— Globally"];
+  }
+};
 
 const HeroSection = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const highlights = getRotatingHighlights(language, t.hero.titleHighlight);
+  const [highlightIndex, setHighlightIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHighlightIndex((prev) => (prev + 1) % highlights.length);
+    }, 3200);
+    return () => clearInterval(interval);
+  }, [highlights.length]);
 
   return (
     <section className="relative min-h-screen flex items-center pt-20 pb-16 overflow-hidden">
       {/* Animated hero background */}
-      {/* <AnimatedHeroBackground /> */}
+      <AnimatedHeroBackground />
 
       <div className="container relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -32,10 +64,22 @@ const HeroSection = () => {
               <span className="font-bold">🌙</span> {t.hero.badge}
             </motion.div>
 
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-6">
-              {t.hero.title}
-              <br />
-              <span className="text-gradient">{t.hero.titleHighlight}</span>
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.15] mb-6 flex flex-col items-center lg:items-start min-h-[2.3em] sm:min-h-[2.4em] md:min-h-[2.5em] lg:min-h-[2.4em]">
+              <span className="block mb-1">{t.hero.title}</span>
+              <span className="relative inline-block h-[1.3em] overflow-hidden w-full lg:w-auto">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={highlights[highlightIndex]}
+                    initial={{ y: "100%", opacity: 0 }}
+                    animate={{ y: "0%", opacity: 1 }}
+                    exit={{ y: "-100%", opacity: 0 }}
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute left-0 right-0 lg:static text-gradient block w-full whitespace-nowrap"
+                  >
+                    {highlights[highlightIndex]}
+                  </motion.span>
+                </AnimatePresence>
+              </span>
             </h1>
 
             <motion.p
@@ -47,24 +91,21 @@ const HeroSection = () => {
               {t.hero.description}
             </motion.p>
 
-            {/* CTA Buttons */}
+            {/* Waitlist CTA Button */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex flex-wrap items-center gap-3 mb-12 justify-center lg:justify-start"
+              className="mb-12"
             >
-              <Button size="lg" className="group">
-                <Apple className="w-5 h-5 me-2 group-hover:scale-110 transition-transform" />
-                {t.hero.appStore}
-              </Button>
-              <Button variant="outline" size="lg" className="group">
-                <Play className="w-5 h-5 me-2 group-hover:scale-110 transition-transform" />
-                {t.hero.googlePlay}
-              </Button>
-              <Button variant="secondary" size="lg" className="group">
-                <Monitor className="w-5 h-5 me-2 group-hover:scale-110 transition-transform" />
-                {t.hero.desktop}
+              <Button
+                asChild
+                size="lg"
+                className="rounded-full font-semibold px-8 shadow-lg shadow-primary/20 hover-lift h-[48px] w-full sm:w-auto"
+              >
+                <a href="#download">
+                  Join Early Access Waitlist
+                </a>
               </Button>
             </motion.div>
 

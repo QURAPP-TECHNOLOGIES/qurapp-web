@@ -1,192 +1,117 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import {
   Mail,
   Search,
-  Filter,
-  Eye,
-  Reply,
-  Archive,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  MessageSquare,
-  X,
-  Send,
-  ChevronDown,
+  Trash2,
+  Calendar,
+  Laptop,
+  AlertTriangle,
+  Loader2,
+  Phone,
+  FileText,
+  Copy,
+  Check,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import type { Database } from "@/integrations/supabase/types";
+import { useToast } from "@/hooks/use-toast";
+import { fetchWithAuth } from "@/lib/api";
 
-type Inquiry = Database["public"]["Tables"]["inquiries"]["Row"];
-type InquiryReply = Database["public"]["Tables"]["inquiry_replies"]["Row"];
-type InquiryStatus = Database["public"]["Enums"]["inquiry_status"];
-type InquiryType = Database["public"]["Enums"]["inquiry_type"];
-
-const statusConfig: Record<InquiryStatus, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-  new: { label: "New", color: "bg-blue-500/20 text-blue-400 border-blue-500/30", icon: AlertCircle },
-  read: { label: "Read", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", icon: Eye },
-  replied: { label: "Replied", color: "bg-green-500/20 text-green-400 border-green-500/30", icon: Reply },
-  resolved: { label: "Resolved", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30", icon: CheckCircle },
-  archived: { label: "Archived", color: "bg-muted text-muted-foreground border-border", icon: Archive },
-};
-
-const typeConfig: Record<InquiryType, { label: string; color: string }> = {
-  general: { label: "General", color: "bg-primary/20 text-primary border-primary/30" },
-  complaint: { label: "Complaint", color: "bg-red-500/20 text-red-400 border-red-500/30" },
-  feedback: { label: "Feedback", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
-  support: { label: "Support", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
-  other: { label: "Other", color: "bg-muted text-muted-foreground border-border" },
+type Subscriber = {
+  id: string;
+  email: string | null;
+  phoneNumber: string | null;
+  devicePlatform: string;
+  createdAt: string;
 };
 
 export function EmailManagement() {
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<InquiryStatus | "all">("all");
-  const [typeFilter, setTypeFilter] = useState<InquiryType | "all">("all");
-  const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
-  const [replies, setReplies] = useState<InquiryReply[]>([]);
-  const [replyMessage, setReplyMessage] = useState("");
-  const [isReplying, setIsReplying] = useState(false);
-  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"list" | "email-templates" | "sms-templates">("list");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchInquiries();
-  }, [statusFilter, typeFilter]);
+  const { toast } = useToast();
+  const apiGatewayUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-  const fetchInquiries = async () => {
+  const fetchSubscribers = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from("inquiries")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/waitlist`);
+      if (res.ok) {
+        const data: Subscriber[] = await res.json();
+        setSubscribers(data);
+      } else {
+        throw new Error("Failed to fetch waitlist subscribers from backend.");
       }
-      if (typeFilter !== "all") {
-        query = query.eq("type", typeFilter);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      setInquiries(data || []);
-    } catch (error) {
-      console.error("Error fetching inquiries:", error);
-      toast.error("Failed to load inquiries");
+    } catch (error: any) {
+      console.error("Error fetching waitlist:", error);
+      toast({
+        title: "Error Loading Waitlist",
+        description: error?.message || String(error),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiGatewayUrl, toast]);
 
-  const fetchReplies = async (inquiryId: string) => {
+  useEffect(() => {
+    fetchSubscribers();
+  }, [fetchSubscribers]);
+
+  const handleDeleteSubscriber = async (id: string) => {
+    setIsDeletingId(id);
     try {
-      const { data, error } = await supabase
-        .from("inquiry_replies")
-        .select("*")
-        .eq("inquiry_id", inquiryId)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      setReplies(data || []);
-    } catch (error) {
-      console.error("Error fetching replies:", error);
-    }
-  };
-
-  const handleViewInquiry = async (inquiry: Inquiry) => {
-    setSelectedInquiry(inquiry);
-    setIsViewOpen(true);
-    await fetchReplies(inquiry.id);
-
-    // Mark as read if it's new
-    if (inquiry.status === "new") {
-      await updateInquiryStatus(inquiry.id, "read");
-    }
-  };
-
-  const updateInquiryStatus = async (id: string, status: InquiryStatus) => {
-    try {
-      const { error } = await supabase
-        .from("inquiries")
-        .update({ status })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      setInquiries((prev) =>
-        prev.map((inq) => (inq.id === id ? { ...inq, status } : inq))
-      );
-
-      if (selectedInquiry?.id === id) {
-        setSelectedInquiry((prev) => (prev ? { ...prev, status } : null));
-      }
-    } catch (error) {
-      console.error("Error updating status:", error);
-      toast.error("Failed to update status");
-    }
-  };
-
-  const handleSendReply = async () => {
-    if (!selectedInquiry || !replyMessage.trim()) return;
-
-    setIsReplying(true);
-    try {
-      const { error } = await supabase.from("inquiry_replies").insert({
-        inquiry_id: selectedInquiry.id,
-        reply_message: replyMessage.trim(),
-        replied_by: "Admin",
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/waitlist/${id}`, {
+        method: "DELETE",
       });
 
-      if (error) throw error;
-
-      // Update inquiry status to replied
-      await updateInquiryStatus(selectedInquiry.id, "replied");
-
-      toast.success("Reply sent successfully");
-      setReplyMessage("");
-      await fetchReplies(selectedInquiry.id);
-    } catch (error) {
-      console.error("Error sending reply:", error);
-      toast.error("Failed to send reply");
+      if (res.ok) {
+        setSubscribers((prev) => prev.filter((sub) => sub.id !== id));
+        toast({
+          title: "Subscriber Removed",
+          description: "Waitlist entry deleted successfully.",
+        });
+      } else {
+        throw new Error("Failed to delete subscriber entry.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Delete Failed",
+        description: error?.message || String(error),
+        variant: "destructive",
+      });
     } finally {
-      setIsReplying(false);
+      setIsDeletingId(null);
     }
   };
 
-  const filteredInquiries = inquiries.filter((inquiry) => {
-    const matchesSearch =
-      inquiry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      inquiry.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      inquiry.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      inquiry.message.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+  const handleCopy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    toast({
+      title: "Copied!",
+      description: "Template copied to clipboard.",
+    });
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const filteredSubscribers = subscribers.filter((sub) => {
+    const query = searchQuery.toLowerCase();
+    const emailVal = sub.email || "";
+    const phoneVal = sub.phoneNumber || "";
+    const platformVal = sub.devicePlatform || "";
+    return (
+      emailVal.toLowerCase().includes(query) ||
+      phoneVal.toLowerCase().includes(query) ||
+      platformVal.toLowerCase().includes(query)
+    );
   });
 
   const formatDate = (dateStr: string) => {
@@ -199,233 +124,483 @@ export function EmailManagement() {
     });
   };
 
+  // Ready-made Templates data
+  const emailTemplates = [
+    {
+      id: "email-welcome",
+      title: "1. Welcome & Confirmation Email",
+      description: "Dispatched automatically to subscribers upon waitlist registration.",
+      subject: "You're on the list! Welcome to QurApp 🌙",
+      html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to the QurApp Waitlist</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;500&display=swap');
+    body { margin: 0; padding: 0; background-color: #FAF8F6; font-family: 'Open Sans', Arial, sans-serif; }
+    .main-table { background-color: #ffffff; margin: 40px auto; width: 100%; max-width: 600px; border-radius: 24px; border: 1px solid #EAE2D8; overflow: hidden; }
+    .header-banner { background-color: #1C130C; padding: 40px 20px; text-align: center; border-bottom: 3px solid #D4AF37; }
+    .header-logo { width: 64px; height: 64px; }
+    .header-title { font-family: 'Montserrat', sans-serif; color: #D4AF37; font-size: 24px; margin: 12px 0 0 0; }
+    .content-body { padding: 40px 30px; }
+    .headline { font-family: 'Montserrat', sans-serif; color: #1C130C; font-size: 22px; font-weight: 700; margin: 0 0 20px 0; }
+    .paragraph { color: #5C524A; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+    .highlight-box { background-color: #FAF6F2; border-left: 4px solid #D4AF37; border-radius: 8px; padding: 20px; margin-bottom: 28px; }
+    .cta-button { background-color: #D4AF37; color: #ffffff !important; display: inline-block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px; text-decoration: none; padding: 12px 30px; border-radius: 30px; }
+    .footer { text-align: center; padding: 30px 20px; background-color: #1C130C; color: #A3968C; font-size: 12px; }
+    .footer a { color: #D4AF37; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <table width="100%" bgcolor="#FAF8F6">
+    <tr>
+      <td>
+        <table class="main-table" align="center" cellpadding="0" cellspacing="0">
+          <tr>
+            <td class="header-banner">
+              <img class="header-logo" src="https://api.qurapp.com/public/logo-hsn.png" alt="QurApp Logo">
+              <h1 class="header-title">QurApp</h1>
+            </td>
+          </tr>
+          <tr>
+            <td class="content-body">
+              <h2 class="headline">You're on the list! Welcome to QurApp. 🌙</h2>
+              <p class="paragraph">Assalamu Alaikum,</p>
+              <p class="paragraph">Thank you for joining our exclusive early access waitlist. QurApp is building the world's first dedicated, ad-free Islamic social networking platform, designed to reconnect the global Ummah with the Holy Quran.</p>
+              <div class="highlight-box">
+                <p class="paragraph" style="margin: 0; font-weight: 700; color: #1C130C;">What to expect next:</p>
+                <p class="paragraph" style="margin: 5px 0 0 0; font-size: 14px;">We are actively polishing our beta. You will receive priority access keys, invites to scholar-led live audio Majlis sessions, and notification digests before our public app store releases.</p>
+              </div>
+              <p class="paragraph">In the meantime, feel free to follow our news feed and read our scientific research publications.</p>
+              <p align="center" style="margin: 30px 0;"><a class="cta-button" href="https://qurapp.com/blog" target="_blank">Explore Our Blog</a></p>
+              <p class="paragraph" style="margin-bottom: 0;">Warm regards,<br><strong>The QurApp Team</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td class="footer">
+              <p style="margin-bottom: 12px;"><a href="https://qurapp.com/privacy">Privacy Policy</a> | <a href="https://qurapp.com/terms">Terms</a> | <a href="https://qurapp.com/contact">Support</a></p>
+              <p>© 2026 QurApp Technologies. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+    },
+    {
+      id: "email-update",
+      title: "2. Product & Feature Update Email",
+      description: "Send updates about design previews, scholarship verification, or new features.",
+      subject: "QurApp Progress Update: Verification for Scholars & Beta Milestones 🌙",
+      html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>QurApp Updates</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;500&display=swap');
+    body { margin: 0; padding: 0; background-color: #FAF8F6; font-family: 'Open Sans', Arial, sans-serif; }
+    .main-table { background-color: #ffffff; margin: 40px auto; width: 100%; max-width: 600px; border-radius: 24px; border: 1px solid #EAE2D8; overflow: hidden; }
+    .header-banner { background-color: #1C130C; padding: 35px 20px; text-align: center; border-bottom: 3px solid #D4AF37; }
+    .header-title { font-family: 'Montserrat', sans-serif; color: #D4AF37; font-size: 22px; margin: 0; }
+    .content-body { padding: 40px 30px; }
+    .headline { font-family: 'Montserrat', sans-serif; color: #1C130C; font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+    .paragraph { color: #5C524A; font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+    .card-box { background-color: #FAF6F2; border-radius: 12px; padding: 25px; margin-bottom: 25px; border: 1px solid #EAE2D8; }
+    .cta-button { background-color: #1C130C; color: #D4AF37 !important; display: inline-block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px; text-decoration: none; padding: 12px 30px; border-radius: 30px; border: 1px solid #D4AF37; }
+    .footer { text-align: center; padding: 30px 20px; background-color: #1C130C; color: #A3968C; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <table width="100%" bgcolor="#FAF8F6">
+    <tr>
+      <td>
+        <table class="main-table" align="center" cellpadding="0" cellspacing="0">
+          <tr>
+            <td class="header-banner">
+              <h1 class="header-title">QurApp Progress Update</h1>
+            </td>
+          </tr>
+          <tr>
+            <td class="content-body">
+              <h2 class="headline">Building Verification Systems for Certified Scholars 📜</h2>
+              <p class="paragraph">Assalamu Alaikum,</p>
+              <p class="paragraph">We wanted to share some exciting progress with our waitlist community. Over the past few weeks, our engineering team has been focused on building our dedicated Islamic Scholar Verification Workflow.</p>
+              
+              <div class="card-box">
+                <p style="margin: 0 0 10px 0; font-family: 'Montserrat', sans-serif; font-weight: 700; color: #1C130C; font-size: 16px;">Key Highlights:</p>
+                <ul style="margin: 0; padding-left: 20px; color: #5C524A; font-size: 14px; line-height: 1.6;">
+                  <li><strong>Verified Profiles:</strong> Credentials validation to protect the integrity of knowledge shared.</li>
+                  <li><strong>Scholar-Led Audio Rooms:</strong> Guided recite-along sessions with authenticated Qaris.</li>
+                  <li><strong>Ad-Free Experience:</strong> Maintaining a pure environment for religious reflection.</li>
+                </ul>
+              </div>
+
+              <p class="paragraph">We are on track to open the private TestFlight and Android Beta soon. Thank you for your continued support.</p>
+              <p align="center" style="margin: 30px 0;"><a class="cta-button" href="https://qurapp.com/blog" target="_blank">Read Our Full Dev Blog</a></p>
+              <p class="paragraph" style="margin-bottom: 0;">Warm regards,<br><strong>The QurApp Team</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td class="footer">
+              <p>© 2026 QurApp Technologies. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+    },
+    {
+      id: "email-beta",
+      title: "3. Beta Access Invitation Email",
+      description: "Send invitation instructions to waitlisted users when TestFlight or Google Play is ready.",
+      subject: "Your beta invitation code is ready! Join QurApp today 🌙",
+      html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>QurApp Beta Invite</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;500&display=swap');
+    body { margin: 0; padding: 0; background-color: #FAF8F6; font-family: 'Open Sans', Arial, sans-serif; }
+    .main-table { background-color: #ffffff; margin: 40px auto; width: 100%; max-width: 600px; border-radius: 24px; border: 1px solid #EAE2D8; overflow: hidden; }
+    .header-banner { background-color: #1C130C; padding: 35px 20px; text-align: center; border-bottom: 3px solid #D4AF37; }
+    .header-title { font-family: 'Montserrat', sans-serif; color: #D4AF37; font-size: 22px; margin: 0; }
+    .content-body { padding: 40px 30px; }
+    .headline { font-family: 'Montserrat', sans-serif; color: #1C130C; font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+    .code-box { background-color: #FAF6F2; border-radius: 12px; padding: 20px; text-align: center; margin: 25px 0; border: 1px dashed #D4AF37; font-family: monospace; font-size: 24px; font-weight: bold; color: #1C130C; letter-spacing: 2px; }
+    .cta-button { background-color: #D4AF37; color: #ffffff !important; display: inline-block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px; text-decoration: none; padding: 12px 35px; border-radius: 30px; }
+    .footer { text-align: center; padding: 30px 20px; background-color: #1C130C; color: #A3968C; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <table width="100%" bgcolor="#FAF8F6">
+    <tr>
+      <td>
+        <table class="main-table" align="center" cellpadding="0" cellspacing="0">
+          <tr>
+            <td class="header-banner">
+              <h1 class="header-title">QurApp Beta Release</h1>
+            </td>
+          </tr>
+          <tr>
+            <td class="content-body">
+              <h2 class="headline">Assalamu Alaikum! You're invited to the Beta 🌙</h2>
+              <p class="paragraph">The wait is over. As part of our early access waitlist, we are thrilled to invite you to the private beta release of QurApp.</p>
+              
+              <p class="paragraph" style="margin-bottom: 0;">Below is your exclusive beta access code:</p>
+              <div class="code-box">QURAPP-BETA-786</div>
+
+              <p class="paragraph">Please download the application from the TestFlight (iOS) or Play Store Beta (Android) using the link below, and enter your access code upon registration.</p>
+              <p align="center" style="margin: 30px 0;"><a class="cta-button" href="https://qurapp.com/beta" target="_blank">Download QurApp Beta</a></p>
+              <p class="paragraph" style="margin-bottom: 0;">Jazak Allah Khair,<br><strong>The QurApp Team</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td class="footer">
+              <p>© 2026 QurApp Technologies. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+    }
+  ];
+
+  const smsTemplates = [
+    {
+      id: "sms-welcome",
+      title: "1. Waitlist Confirmation SMS",
+      description: "Send confirmation message immediately after phone waitlist registration.",
+      text: "QurApp: Assalamu Alaikum! You're on the early access waitlist. We will notify you via SMS when our private beta is ready. Follow updates at https://qurapp.com/blog 🌙"
+    },
+    {
+      id: "sms-majlis",
+      title: "2. Live Majlis Start Alert SMS",
+      description: "Notify users about a live scholar recitation or Q&A room.",
+      text: "QurApp: A new live scholar audio Majlis session is starting now! Join our community to listen and recite together: https://app.qurapp.com/majlis 🌙"
+    },
+    {
+      id: "sms-launch",
+      title: "3. Product Launch Announcement SMS",
+      description: "Send to all registered users upon official launch.",
+      text: "QurApp: Assalamu Alaikum! QurApp is now officially launched. Reconnect with the Holy Quran. Download now on iOS and Android: https://qurapp.com/download 🌙"
+    }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Email Management</h2>
-          <p className="text-muted-foreground">View and respond to user inquiries and complaints</p>
+          <h2 className="text-2xl font-bold text-foreground font-display">Waitlist & Templates</h2>
+          <p className="text-muted-foreground">Manage early access subscriptions and copy outreach message templates</p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1">
+          <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
             <Mail className="h-3 w-3" />
-            {inquiries.filter((i) => i.status === "new").length} new
+            {subscribers.length} Registered
           </Badge>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, email, subject..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as InquiryStatus | "all")}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            {Object.entries(statusConfig).map(([key, { label }]) => (
-              <SelectItem key={key} value={key}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as InquiryType | "all")}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {Object.entries(typeConfig).map(([key, { label }]) => (
-              <SelectItem key={key} value={key}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Tabs */}
+      <div className="flex border-b border-border/50">
+        <button
+          onClick={() => setActiveTab("list")}
+          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${
+            activeTab === "list"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Mail className="h-4 w-4" />
+          Subscribers List
+        </button>
+        <button
+          onClick={() => setActiveTab("email-templates")}
+          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${
+            activeTab === "email-templates"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <FileText className="h-4 w-4" />
+          Email Templates
+        </button>
+        <button
+          onClick={() => setActiveTab("sms-templates")}
+          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${
+            activeTab === "sms-templates"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Phone className="h-4 w-4" />
+          SMS/Phone Templates
+        </button>
       </div>
 
-      {/* Inquiries List */}
-      <div className="bg-card rounded-xl border border-border/50 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-muted-foreground">
-            <Clock className="h-8 w-8 mx-auto mb-2 animate-spin" />
-            Loading inquiries...
+      {/* Tab Contents */}
+      {activeTab === "list" && (
+        <div className="space-y-4">
+          {/* Search Filter */}
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by email, phone, or platform..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
-        ) : filteredInquiries.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">
-            <Mail className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>No inquiries found</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-border/50">
-            {filteredInquiries.map((inquiry, index) => {
-              const StatusIcon = statusConfig[inquiry.status].icon;
-              return (
-                <motion.div
-                  key={inquiry.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`p-4 hover:bg-muted/30 transition-colors cursor-pointer ${
-                    inquiry.status === "new" ? "bg-primary/5" : ""
-                  }`}
-                  onClick={() => handleViewInquiry(inquiry)}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-foreground truncate">
-                          {inquiry.name}
-                        </span>
-                        <Badge variant="outline" className={`text-xs ${typeConfig[inquiry.type].color}`}>
-                          {typeConfig[inquiry.type].label}
-                        </Badge>
-                        <Badge variant="outline" className={`text-xs ${statusConfig[inquiry.status].color}`}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {statusConfig[inquiry.status].label}
-                        </Badge>
-                      </div>
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {inquiry.subject}
-                      </p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {inquiry.message}
-                      </p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                        <span>{inquiry.email}</span>
-                        <span>{formatDate(inquiry.created_at)}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewInquiry(inquiry);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon">
-                            <ChevronDown className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => updateInquiryStatus(inquiry.id, "resolved")}>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Mark Resolved
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateInquiryStatus(inquiry.id, "archived")}>
-                            <Archive className="h-4 w-4 mr-2" />
-                            Archive
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
-      {/* View & Reply Dialog */}
-      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              {selectedInquiry?.subject}
-            </DialogTitle>
-          </DialogHeader>
-
-          {selectedInquiry && (
-            <div className="flex-1 overflow-y-auto space-y-4">
-              {/* Original Message */}
-              <div className="bg-muted/50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground">{selectedInquiry.name}</span>
-                    <Badge variant="outline" className={`text-xs ${typeConfig[selectedInquiry.type].color}`}>
-                      {typeConfig[selectedInquiry.type].label}
-                    </Badge>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(selectedInquiry.created_at)}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground mb-2">{selectedInquiry.email}</p>
-                <p className="text-foreground whitespace-pre-wrap">{selectedInquiry.message}</p>
+          {/* Subscribers Table */}
+          <div className="bg-card rounded-xl border border-border/50 overflow-hidden">
+            {loading ? (
+              <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
+                <p className="text-sm">Loading waitlist subscriptions...</p>
               </div>
+            ) : filteredSubscribers.length === 0 ? (
+              <div className="p-12 text-center text-muted-foreground">
+                <AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-40 text-yellow-500" />
+                <p className="text-base font-medium">No waitlist subscriptions found</p>
+                <p className="text-xs mt-1">Submissions via the QurApp Landing Page will appear here.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/50 bg-muted/40 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                      <th className="p-4 font-semibold">Contact Info</th>
+                      <th className="p-4 font-semibold">Registered Platform</th>
+                      <th className="p-4 font-semibold">Type</th>
+                      <th className="p-4 font-semibold">Registration Date</th>
+                      <th className="p-4 text-right font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50 text-sm">
+                    {filteredSubscribers.map((sub, index) => (
+                      <motion.tr
+                        key={sub.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.02 }}
+                        className="hover:bg-muted/20 transition-colors"
+                      >
+                        <td className="p-4 font-medium text-foreground">
+                          <div className="flex flex-col">
+                            {sub.email && (
+                              <span className="flex items-center gap-1.5 text-foreground">
+                                <Mail className="h-3.5 w-3.5 opacity-60 text-primary" />
+                                {sub.email}
+                              </span>
+                            )}
+                            {sub.phoneNumber && (
+                              <span className="flex items-center gap-1.5 text-muted-foreground text-xs mt-0.5">
+                                <Phone className="h-3.5 w-3.5 opacity-60 text-green-500" />
+                                {sub.phoneNumber}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4 capitalize">
+                          <div className="flex items-center gap-1.5">
+                            <Laptop className="h-3.5 w-3.5 opacity-60" />
+                            <span>{sub.devicePlatform}</span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          {sub.email && sub.phoneNumber ? (
+                            <Badge variant="secondary" className="text-xs bg-indigo-500/10 text-indigo-500 border-indigo-500/20">
+                              Dual Waitlist
+                            </Badge>
+                          ) : sub.email ? (
+                            <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
+                              Email Only
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-500 border-green-500/20">
+                              Mobile Only
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="p-4 text-muted-foreground text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5 opacity-60" />
+                            <span>{formatDate(sub.createdAt)}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                            disabled={isDeletingId === sub.id}
+                            onClick={() => handleDeleteSubscriber(sub.id)}
+                          >
+                            {isDeletingId === sub.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-              {/* Replies */}
-              {replies.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-foreground">Replies</h4>
-                  {replies.map((reply) => (
-                    <div key={reply.id} className="bg-primary/10 rounded-lg p-4 ml-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-foreground">
-                          {reply.replied_by || "Admin"}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(reply.created_at)}
-                        </span>
-                      </div>
-                      <p className="text-foreground whitespace-pre-wrap">{reply.reply_message}</p>
-                    </div>
-                  ))}
+      {activeTab === "email-templates" && (
+        <div className="grid grid-cols-1 gap-6">
+          {emailTemplates.map((tmpl) => (
+            <div key={tmpl.id} className="bg-card rounded-xl border border-border/50 p-6 space-y-4 shadow-sm">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-bold text-foreground font-display">{tmpl.title}</h3>
+                  <p className="text-sm text-muted-foreground">{tmpl.description}</p>
                 </div>
-              )}
-
-              {/* Reply Form */}
-              <div className="space-y-3 pt-4 border-t border-border">
-                <Textarea
-                  placeholder="Type your reply..."
-                  value={replyMessage}
-                  onChange={(e) => setReplyMessage(e.target.value)}
-                  className="min-h-[100px] resize-none"
-                />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={selectedInquiry.status}
-                      onValueChange={(v) => updateInquiryStatus(selectedInquiry.id, v as InquiryStatus)}
-                    >
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(statusConfig).map(([key, { label }]) => (
-                          <SelectItem key={key} value={key}>{label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="flex gap-2">
                   <Button
-                    onClick={handleSendReply}
-                    disabled={!replyMessage.trim() || isReplying}
-                    className="gap-2"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => handleCopy(tmpl.id, tmpl.html)}
                   >
-                    <Send className="h-4 w-4" />
-                    {isReplying ? "Sending..." : "Send Reply"}
+                    {copiedId === tmpl.id ? (
+                      <>
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        <span>Copy Code</span>
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
+
+              <div className="text-xs space-y-1.5 bg-muted/40 p-3 rounded-lg border">
+                <div><span className="font-semibold text-muted-foreground uppercase text-[10px]">Subject:</span> <span className="text-foreground">{tmpl.subject}</span></div>
+                <div><span className="font-semibold text-muted-foreground uppercase text-[10px]">From:</span> <span className="text-foreground">QurApp &lt;welcome@qurapp.com&gt;</span></div>
+              </div>
+
+              {/* Collapsible/Boxed Code Preview */}
+              <div className="relative rounded-lg overflow-hidden border bg-zinc-950 p-4">
+                <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-2">
+                  <span className="text-xs text-white/50 font-mono">HTML Source Code</span>
+                  <span className="text-xs text-primary font-medium flex items-center gap-1">
+                    <ExternalLink className="h-3 w-3" />
+                    Responsive Table Layout
+                  </span>
+                </div>
+                <pre className="text-xs font-mono text-zinc-300 max-h-48 overflow-y-auto whitespace-pre-wrap select-all">
+                  {tmpl.html}
+                </pre>
+              </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "sms-templates" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {smsTemplates.map((tmpl) => (
+            <div key={tmpl.id} className="bg-card rounded-xl border border-border/50 p-6 space-y-4 shadow-sm flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="flex justify-between items-start">
+                  <h3 className="text-base font-bold text-foreground font-display">{tmpl.title}</h3>
+                  <Badge variant="secondary" className="font-mono text-[10px]">SMS Text</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{tmpl.description}</p>
+                <div className="bg-zinc-950 text-zinc-200 p-4 rounded-lg border border-border font-sans text-sm min-h-24 whitespace-pre-wrap leading-relaxed select-all">
+                  {tmpl.text}
+                </div>
+              </div>
+              <div className="pt-4 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => handleCopy(tmpl.id, tmpl.text)}
+                >
+                  {copiedId === tmpl.id ? (
+                    <>
+                      <Check className="h-4 w-4 text-green-500" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      <span>Copy Text</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

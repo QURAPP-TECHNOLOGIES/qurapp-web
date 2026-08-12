@@ -39,9 +39,9 @@ export const ConnectionLines = () => {
     >
       <defs>
         <linearGradient id="arcGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="hsl(var(--gold))" stopOpacity="0.1" />
-          <stop offset="50%" stopColor="hsl(var(--gold))" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="hsl(var(--gold))" stopOpacity="0.1" />
+          <stop offset="0%" stopColor="hsl(var(--gold))" stopOpacity="0.15" />
+          <stop offset="50%" stopColor="#10B981" stopOpacity="0.7" />
+          <stop offset="100%" stopColor="hsl(var(--gold))" stopOpacity="0.15" />
         </linearGradient>
         <filter id="arcGlow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="0.5" result="coloredBlur" />

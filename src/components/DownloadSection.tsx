@@ -1,68 +1,183 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Apple, Play, Monitor } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
+import { PhoneInput } from "react-international-phone";
+import "react-international-phone/style.css";
 
 const DownloadSection = () => {
   const { t } = useLanguage();
+  const { toast } = useToast();
+  const [subscriptionType, setSubscriptionType] = useState<"email" | "phone">("email");
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const contactValue = subscriptionType === "email" ? email : phoneNumber;
+    if (!contactValue) return;
+
+    // Validate inputs
+    let payload = {};
+    if (subscriptionType === "email") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Email Address",
+          description: "Please enter a valid email address format (e.g. name@example.com).",
+        });
+        return;
+      }
+      payload = { email: email.trim(), devicePlatform: "web" };
+    } else {
+      // Validate phone number format (min length 7 digits plus international prefix)
+      // react-international-phone value starts with "+" prefix, e.g. "+966555123456"
+      const cleanPhone = phoneNumber.replace(/[\s\-()]/g, "");
+      const phoneRegex = /^\+[0-9]{8,15}$/;
+      if (!phoneRegex.test(cleanPhone)) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Phone Number",
+          description: "Please enter a valid international phone number (min 7 digits after country code).",
+        });
+        return;
+      }
+      payload = { phoneNumber: cleanPhone, devicePlatform: "web" };
+    }
+
+    setIsSubmitting(true);
+    try {
+      const apiGatewayUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
+      const res = await fetch(`${apiGatewayUrl}/api/v1/waitlist`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.status === 409) {
+        toast({
+          title: "Already Registered",
+          description: `This ${subscriptionType === "email" ? "email" : "phone number"} is already on the early access waitlist.`,
+        });
+        if (subscriptionType === "email") setEmail("");
+        else setPhoneNumber("");
+        return;
+      }
+
+      if (!res.ok) throw new Error("Failed to subscribe.");
+
+      toast({
+        title: "Joined the Waitlist!",
+        description: `Thank you for subscribing. We will notify you via ${subscriptionType === "email" ? "email" : "SMS"} when QurApp is ready.`,
+      });
+      setEmail("");
+      setPhoneNumber("");
+    } catch (err) {
+      console.error("Waitlist error:", err);
+      toast({
+        variant: "destructive",
+        title: "Subscription Failed",
+        description: "There was a problem signing you up. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <section id="download" className="py-24 md:py-32">
-      <div className="container">
+    <section id="download" className="py-24 md:py-32 relative overflow-hidden">
+      {/* Background spotlights */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-glow-spot blur-3xl opacity-20 pointer-events-none -z-10 animate-pulse" />
+
+      <div className="container relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center"
+          className="max-w-2xl mx-auto text-center glass-premium p-8 md:p-12 rounded-[2.5rem] border border-primary/20 shadow-xl"
         >
-          <h2 className="font-display text-4xl md:text-6xl font-bold mb-6">
-            {t.download.title}
+          <h2 className="font-display text-3xl md:text-5xl font-bold mb-6">
+            Be the First to Experience
             <br />
-            <span className="text-gradient">{t.download.titleHighlight}</span>
+            <span className="text-gradient">QurApp</span>
           </h2>
 
-          <p className="text-muted-foreground text-lg md:text-xl mb-4 leading-relaxed">
-            {t.download.description1}
-            <br />
-            {t.download.description2}
-          </p>
-          
-          <p className="text-foreground font-medium text-lg mb-10">
-            {t.download.description3}
+          <p className="text-muted-foreground text-base md:text-lg mb-8 leading-relaxed">
+            QurApp is currently under development. Join our exclusive global waitlist today to receive project updates, early beta access, and launch notifications.
           </p>
 
-          {/* Mobile Apps */}
-          <p className="text-sm font-medium text-muted-foreground mb-3">{t.download.mobileApps}</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            <Button size="lg" className="w-full sm:w-auto group px-8">
-              <Apple className="w-5 h-5 me-2 group-hover:scale-110 transition-transform" />
-              {t.download.appStore}
-            </Button>
-            <Button variant="outline" size="lg" className="w-full sm:w-auto group px-8">
-              <Play className="w-5 h-5 me-2 group-hover:scale-110 transition-transform" />
-              {t.download.googlePlay}
-            </Button>
+          {/* Subscription Type Toggle Tabs */}
+          <div className="flex justify-center mb-6 gap-2 bg-black/30 p-1 rounded-full max-w-[280px] mx-auto border border-white/5 backdrop-blur-sm shadow-inner">
+            <button
+              type="button"
+              onClick={() => setSubscriptionType("email")}
+              className={`flex-1 py-1.5 px-4 rounded-full text-xs font-semibold transition-all ${subscriptionType === "email"
+                  ? "bg-primary text-black shadow-md font-bold"
+                  : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              Email Address
+            </button>
+            <button
+              type="button"
+              onClick={() => setSubscriptionType("phone")}
+              className={`flex-1 py-1.5 px-4 rounded-full text-xs font-semibold transition-all ${subscriptionType === "phone"
+                  ? "bg-primary text-black shadow-md font-bold"
+                  : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              Phone Number
+            </button>
           </div>
 
-          {/* Desktop Apps */}
-          <p className="text-sm font-medium text-muted-foreground mb-3">{t.download.desktopApps}</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            <Button variant="secondary" size="lg" className="w-full sm:w-auto group px-8">
-              <Apple className="w-5 h-5 me-2 group-hover:scale-110 transition-transform" />
-              {t.download.macDownload}
+          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-6 items-center">
+            {subscriptionType === "email" ? (
+              <input
+                type="email"
+                placeholder="Enter your email address..."
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="flex-1 w-full px-5 py-3 rounded-full border border-white/10 bg-black/40 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm glass-premium h-[48px]"
+              />
+            ) : (
+              <div className="flex-1 w-full relative phone-input-dark">
+                <PhoneInput
+                  defaultCountry="sa"
+                  value={phoneNumber}
+                  onChange={(phone) => setPhoneNumber(phone)}
+                  inputClassName="w-full h-[48px] rounded-full border border-white/10 bg-black/40 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm glass-premium"
+                  className="w-full flex gap-2"
+                  countrySelectorStyleProps={{
+                    buttonClassName: "px-3 py-3 rounded-full border border-white/10 bg-black/40 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 glass-premium h-[48px] w-[64px] flex items-center justify-center",
+                    dropdownStyleProps: {
+                      className: "bg-zinc-950 border border-white/10 text-foreground rounded-lg shadow-xl",
+                    },
+                  }}
+                />
+              </div>
+            )}
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              size="lg"
+              className="rounded-full font-semibold px-6 shadow-lg shadow-primary/20 hover-lift h-[48px] w-full sm:w-auto"
+            >
+              {isSubmitting ? "Joining..." : "Join Waitlist"}
             </Button>
-            <Button variant="secondary" size="lg" className="w-full sm:w-auto group px-8">
-              <Monitor className="w-5 h-5 me-2 group-hover:scale-110 transition-transform" />
-              {t.download.windowsDownload}
-            </Button>
-          </div>
+          </form>
 
-          <p className="text-muted-foreground text-sm">
-            {t.download.freeDownload}
+          <p className="text-muted-foreground text-xs">
+            100% Free • No Ads • Unsubscribe anytime
           </p>
-          
-          <p className="mt-8 text-primary font-medium italic">
+
+          <p className="mt-8 text-primary font-medium italic text-sm">
             {t.download.tagline}
           </p>
         </motion.div>

@@ -24,29 +24,7 @@ const TestimonialsSection = () => {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {t.testimonials.items.map((testimonial, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="p-8 rounded-3xl bg-card border border-border hover:shadow-card transition-shadow duration-300"
-            >
-              <div className="flex gap-1 mb-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-primary text-primary" />
-                ))}
-              </div>
-              <p className="text-foreground mb-6 leading-relaxed">"{testimonial.quote}"</p>
-              <div>
-                <div className="font-semibold">{testimonial.name}</div>
-                <div className="text-sm text-muted-foreground">{testimonial.role}</div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        {/* Testimonials items grid commented out until real reviews are available */}
       </div>
     </section>
   );

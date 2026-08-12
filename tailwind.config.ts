@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['Poppins', 'sans-serif'],
-        body: ['Poppins', 'Noto Sans Arabic', 'sans-serif'],
+        display: ['Montserrat', 'sans-serif'],
+        body: ['Open Sans', 'Noto Sans Arabic', 'sans-serif'],
         arabic: ['Noto Sans Arabic', 'sans-serif'],
       },
       colors: {

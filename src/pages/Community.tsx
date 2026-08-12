@@ -47,7 +47,7 @@ const Community = () => {
                 </CardHeader>
                 <CardContent>
                   <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700 gap-2">
-                    <a href="https://whatsapp.com" target="_blank" rel="noopener noreferrer">
+                    <a href="https://whatsapp.com/channel/0029VbCg6uGHAdNWKpB1Fm3o" target="_blank" rel="noopener noreferrer">
                       Join WhatsApp Channel <ExternalLink className="w-4 h-4" />
                     </a>
                   </Button>
@@ -64,7 +64,7 @@ const Community = () => {
                 </CardHeader>
                 <CardContent>
                   <Button asChild variant="outline" className="w-full gap-2 border-blue-500/30 text-blue-500 hover:bg-blue-500/10">
-                    <a href="https://t.me" target="_blank" rel="noopener noreferrer">
+                    <a href="https://t.me/qurapp" target="_blank" rel="noopener noreferrer">
                       Join Telegram Channel <ExternalLink className="w-4 h-4" />
                     </a>
                   </Button>

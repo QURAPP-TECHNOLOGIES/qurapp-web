@@ -8,18 +8,31 @@ const AnimatedHeroBackground = () => {
     <div className="absolute inset-0 overflow-hidden">
       {/* Clean white/cream background */}
       <div className="absolute inset-0 bg-gradient-to-br from-[hsl(45,30%,98%)] via-[hsl(40,25%,96%)] to-[hsl(35,20%,94%)] dark:from-[hsl(30,10%,10%)] dark:via-[hsl(25,8%,8%)] dark:to-[hsl(20,6%,6%)]" />
-      
-      {/* Subtle radial glow from center */}
+
+      {/* Subtle overlapping radial glows (Gold/Amber & Emerald) */}
       <motion.div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] rounded-full bg-gradient-radial from-gold/10 via-gold/5 to-transparent blur-3xl"
+        className="absolute top-[45%] left-[40%] -translate-x-1/2 -translate-y-1/2 w-[600px] h-[500px] rounded-full bg-glow-spot blur-3xl"
         animate={{
-          scale: [1, 1.1, 1],
-          opacity: [0.4, 0.6, 0.4],
+          scale: [1, 1.15, 1],
+          opacity: [0.5, 0.8, 0.5],
         }}
         transition={{
-          duration: 10,
+          duration: 12,
           repeat: Infinity,
           ease: "easeInOut",
+        }}
+      />
+      <motion.div
+        className="absolute top-[55%] left-[60%] -translate-x-1/2 -translate-y-1/2 w-[550px] h-[500px] rounded-full bg-glow-spot-emerald blur-3xl"
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.4, 0.7, 0.4],
+        }}
+        transition={{
+          duration: 9,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 2.0,
         }}
       />
 
@@ -30,9 +43,9 @@ const AnimatedHeroBackground = () => {
       <ConnectionLines />
 
       {/* Central Quran icon */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      {/* <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <QuranIcon />
-      </div>
+      </div> */}
     </div>
   );
 };

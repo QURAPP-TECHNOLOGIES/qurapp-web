@@ -26,6 +26,8 @@ import duahScreen from "@/assets/app-screenshots/duah-screen.jpeg";
 import duahCategory from "@/assets/app-screenshots/dua-cat.jpeg";
 import hisnulMuslimScreen from "@/assets/app-screenshots/hisnul-muslim-screen.jpeg";
 import tasbihScreen from "@/assets/app-screenshots/tasbih-screen.jpeg";
+import hslOpenGraph from "@/assets/hsl-open-graph.jpg";
+
 
 type DownloadLinks = {
   ios: string;
@@ -49,6 +51,7 @@ const HisnulMuslim = () => {
     title: `${t.hisnulMuslimPage.title} - ${t.hisnulMuslimPage.subtitle} | Standalone Offline App`,
     description: t.hisnulMuslimPage.description,
     url: "/hisnul-muslim",
+    image: typeof window !== "undefined" ? window.location.origin + hslOpenGraph : hslOpenGraph,
   });
 
   useEffect(() => {
@@ -71,6 +74,29 @@ const HisnulMuslim = () => {
       }
     };
     fetchAppConfig();
+  }, []);
+
+  const [deviceType, setDeviceType] = useState<"mac" | "windows" | "ios" | "android" | null>(null);
+
+  useEffect(() => {
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const platform = window.navigator.platform.toLowerCase();
+
+    if (/iphone|ipad|ipod/.test(userAgent)) {
+      setDeviceType("ios");
+    } else if (/android/.test(userAgent)) {
+      setDeviceType("android");
+    } else if (/mac/.test(platform) || /mac/.test(userAgent)) {
+      if (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) {
+        setDeviceType("ios");
+      } else {
+        setDeviceType("mac");
+      }
+    } else if (/win/.test(platform) || /win/.test(userAgent)) {
+      setDeviceType("windows");
+    } else {
+      setDeviceType("mac"); // fallback default
+    }
   }, []);
 
   const getFeatureIcon = (index: number) => {
@@ -128,42 +154,42 @@ const HisnulMuslim = () => {
                     Download Native Apps
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto lg:mx-0">
-                    <Button asChild size="lg" className="font-medium group justify-start">
-                      <a href={downloadLinks.mac} target="_blank" rel="noreferrer">
-                        <Apple className="w-5 h-5 me-2.5 text-primary-foreground group-hover:scale-110 transition-transform" />
-                        <div className="text-start leading-tight">
-                          <div className="text-[10px] opacity-80 uppercase">Download for</div>
-                          <div className="text-sm font-bold">macOS (.dmg)</div>
-                        </div>
-                      </a>
-                    </Button>
-
-                    <Button asChild variant="outline" size="lg" className="font-medium group justify-start border-blue-500/30 hover:bg-blue-500/10">
-                      <a href={downloadLinks.windows} target="_blank" rel="noreferrer">
-                        <Monitor className="w-5 h-5 me-2.5 text-blue-500 group-hover:scale-110 transition-transform" />
-                        <div className="text-start leading-tight">
-                          <div className="text-[10px] text-muted-foreground uppercase">Download for</div>
-                          <div className="text-sm font-bold text-foreground">Windows (.exe)</div>
-                        </div>
-                      </a>
-                    </Button>
-
-                    <Button asChild variant="outline" size="lg" className="font-medium group justify-start">
+                    <Button asChild variant={deviceType === "ios" ? "default" : "outline"} size="lg" className="font-medium group justify-start">
                       <a href={downloadLinks.ios} target="_blank" rel="noreferrer">
                         <Apple className="w-5 h-5 me-2.5 group-hover:scale-110 transition-transform" />
                         <div className="text-start leading-tight">
-                          <div className="text-[10px] text-muted-foreground uppercase">App Store</div>
+                          <div className={`text-[10px] uppercase ${deviceType === "ios" ? "opacity-80 text-primary-foreground" : "text-muted-foreground"}`}>App Store</div>
                           <div className="text-sm font-bold">iOS Devices</div>
                         </div>
                       </a>
                     </Button>
 
-                    <Button asChild variant="outline" size="lg" className="font-medium group justify-start">
+                    <Button asChild variant={deviceType === "android" ? "default" : "outline"} size="lg" className="font-medium group justify-start">
                       <a href={downloadLinks.android} target="_blank" rel="noreferrer">
-                        <Play className="w-5 h-5 me-2.5 text-emerald-500 group-hover:scale-110 transition-transform" />
+                        <Play className={`w-5 h-5 me-2.5 group-hover:scale-110 transition-transform ${deviceType === "android" ? "" : "text-emerald-500"}`} />
                         <div className="text-start leading-tight">
-                          <div className="text-[10px] text-muted-foreground uppercase">Google Play</div>
+                          <div className={`text-[10px] uppercase ${deviceType === "android" ? "opacity-80 text-primary-foreground" : "text-muted-foreground"}`}>Google Play</div>
                           <div className="text-sm font-bold">Android Devices</div>
+                        </div>
+                      </a>
+                    </Button>
+
+                    <Button asChild variant={deviceType === "mac" || deviceType === null ? "default" : "outline"} size="lg" className="font-medium group justify-start">
+                      <a href={downloadLinks.mac} target="_blank" rel="noreferrer">
+                        <Apple className="w-5 h-5 me-2.5 group-hover:scale-110 transition-transform" />
+                        <div className="text-start leading-tight">
+                          <div className={`text-[10px] uppercase ${deviceType === "mac" || deviceType === null ? "opacity-80 text-primary-foreground" : "text-muted-foreground"}`}>Download for</div>
+                          <div className="text-sm font-bold">macOS (.dmg)</div>
+                        </div>
+                      </a>
+                    </Button>
+
+                    <Button asChild variant={deviceType === "windows" ? "default" : "outline"} size="lg" className="font-medium group justify-start border-blue-500/30 hover:bg-blue-500/10">
+                      <a href={downloadLinks.windows} target="_blank" rel="noreferrer">
+                        <Monitor className={`w-5 h-5 me-2.5 group-hover:scale-110 transition-transform ${deviceType === "windows" ? "" : "text-blue-500"}`} />
+                        <div className="text-start leading-tight">
+                          <div className={`text-[10px] uppercase ${deviceType === "windows" ? "opacity-80 text-primary-foreground" : "text-muted-foreground"}`}>Download for</div>
+                          <div className="text-sm font-bold text-foreground">Windows (.exe)</div>
                         </div>
                       </a>
                     </Button>
@@ -200,12 +226,12 @@ const HisnulMuslim = () => {
                 </div>
 
                 {/* Smartphone Mockup */}
-                <div className="relative w-[280px] sm:w-[310px] rounded-[2.5rem] p-3 bg-gradient-to-b from-border/80 via-border/40 to-border/80 border border-border/80 shadow-2xl shadow-primary/10">
+                <div className="relative w-[280px] sm:w-[310px] rounded-[2.5rem] p-3 glass-premium border border-white/10 shadow-2xl shadow-primary/10 hover-lift transition-all duration-500 cursor-pointer">
                   <div className="relative rounded-[2rem] overflow-hidden bg-background border border-border/40">
                     <img
                       src={hisnulMuslimScreen}
                       alt="Hisnul Muslim Main Interface"
-                      className="w-full h-auto object-cover rounded-[2rem] shadow-inner"
+                      className="w-full h-auto object-cover rounded-[2rem]"
                     />
                   </div>
                 </div>
@@ -232,7 +258,7 @@ const HisnulMuslim = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
-                className="group flex flex-col bg-card border border-border/60 rounded-3xl p-4 hover:border-primary/40 hover:shadow-xl transition-all"
+                className="group flex flex-col glass-premium hover-glow-border hover-lift cursor-pointer rounded-3xl p-4 transition-all duration-500"
               >
                 <div className="relative rounded-2xl overflow-hidden bg-muted mb-4 border border-border/40">
                   <img
@@ -258,7 +284,7 @@ const HisnulMuslim = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="group flex flex-col bg-card border border-border/60 rounded-3xl p-4 hover:border-primary/40 hover:shadow-xl transition-all"
+                className="group flex flex-col glass-premium hover-glow-border-blue hover-lift cursor-pointer rounded-3xl p-4 transition-all duration-500"
               >
                 <div className="relative rounded-2xl overflow-hidden bg-muted mb-4 border border-border/40">
                   <img
@@ -268,7 +294,7 @@ const HisnulMuslim = () => {
                   />
                 </div>
                 <div className="px-2 pb-2 space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full inline-block">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-500 bg-blue-500/10 px-2.5 py-1 rounded-full inline-block">
                     Audio & Text
                   </span>
                   <h3 className="text-lg font-bold font-display">Crisp Arabic & Audio Stream</h3>
@@ -284,7 +310,7 @@ const HisnulMuslim = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="group flex flex-col bg-card border border-border/60 rounded-3xl p-4 hover:border-primary/40 hover:shadow-xl transition-all"
+                className="group flex flex-col glass-premium hover-glow-border-emerald hover-lift cursor-pointer rounded-3xl p-4 transition-all duration-500"
               >
                 <div className="relative rounded-2xl overflow-hidden bg-muted mb-4 border border-border/40">
                   <img
@@ -294,7 +320,7 @@ const HisnulMuslim = () => {
                   />
                 </div>
                 <div className="px-2 pb-2 space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-500 bg-blue-500/10 px-2.5 py-1 rounded-full inline-block">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full inline-block">
                     Digital Tasbih
                   </span>
                   <h3 className="text-lg font-bold font-display">Smart Tasbih Counter</h3>
@@ -317,26 +343,32 @@ const HisnulMuslim = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {t.hisnulMuslimPage.features.map((feature, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className="p-6 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-lg transition-all duration-300 group flex flex-col items-start"
-                >
-                  <div className="p-3 rounded-xl bg-primary/10 text-primary mb-5 group-hover:scale-110 transition-transform">
-                    {getFeatureIcon(idx)}
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed flex-1">
-                    {feature.description}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
+            <div className="relative">
+               {/* Ambient Backdrop Spots */}
+               <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-glow-spot blur-3xl pointer-events-none opacity-20 -z-10 animate-pulse" />
+               <div className="absolute top-1/2 left-3/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-glow-spot-emerald blur-3xl pointer-events-none opacity-15 -z-10 animate-pulse" />
+
+               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
+                 {t.hisnulMuslimPage.features.map((feature, idx) => (
+                   <motion.div
+                     key={idx}
+                     initial={{ opacity: 0, y: 20 }}
+                     whileInView={{ opacity: 1, y: 0 }}
+                     viewport={{ once: true, margin: "-100px" }}
+                     transition={{ duration: 0.5, delay: idx * 0.1 }}
+                     className="p-6 rounded-2xl glass-premium hover-glow-border-blue hover-lift transition-all duration-500 group flex flex-col items-start cursor-pointer"
+                   >
+                     <div className="p-3 rounded-xl bg-primary/10 text-primary mb-5 group-hover:scale-110 transition-transform">
+                       {getFeatureIcon(idx)}
+                     </div>
+                     <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                     <p className="text-muted-foreground text-sm leading-relaxed flex-1">
+                       {feature.description}
+                     </p>
+                   </motion.div>
+                 ))}
+               </div>
+             </div>
           </section>
 
           {/* Promotional Download CTA Area */}
@@ -346,11 +378,11 @@ const HisnulMuslim = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="p-8 md:p-12 lg:p-16 rounded-[2.5rem] bg-gradient-to-br from-primary/10 via-card to-gold/10 border border-primary/25 shadow-xl text-center max-w-4xl mx-auto relative overflow-hidden"
+              className="p-8 md:p-12 lg:p-16 rounded-[2.5rem] glass-premium hover-glow-border border border-primary/25 shadow-xl text-center max-w-4xl mx-auto relative overflow-hidden"
             >
               {/* Decorative graphic */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-gold/5 rounded-full blur-3xl -z-10" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-glow-spot blur-3xl -z-10 opacity-30 pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-glow-spot-emerald blur-3xl -z-10 opacity-25 pointer-events-none" />
 
               <h2 className="text-3xl md:text-4xl font-bold font-display mb-6">
                 Start Your Daily Azhkar Habit Today
@@ -360,28 +392,29 @@ const HisnulMuslim = () => {
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl mx-auto">
-                <Button asChild size="lg" className="font-medium group">
-                  <a href={downloadLinks.mac} target="_blank" rel="noreferrer">
-                    <Apple className="w-4 h-4 me-2 group-hover:scale-110 transition-transform" />
-                    macOS (.dmg)
-                  </a>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="font-medium group border-blue-500/30 hover:bg-blue-500/10">
-                  <a href={downloadLinks.windows} target="_blank" rel="noreferrer">
-                    <Monitor className="w-4 h-4 me-2 text-blue-500 group-hover:scale-110 transition-transform" />
-                    Windows (.exe)
-                  </a>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="font-medium group">
+                <Button asChild variant={deviceType === "ios" ? "default" : "outline"} size="lg" className="font-medium group">
                   <a href={downloadLinks.ios} target="_blank" rel="noreferrer">
                     <Apple className="w-4 h-4 me-2 group-hover:scale-110 transition-transform" />
                     iOS App Store
                   </a>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="font-medium group">
+                <Button asChild variant={deviceType === "android" ? "default" : "outline"} size="lg" className="font-medium group">
                   <a href={downloadLinks.android} target="_blank" rel="noreferrer">
-                    <Play className="w-4 h-4 me-2 text-emerald-500 group-hover:scale-110 transition-transform" />
+                    <Play className={`w-4 h-4 me-2 group-hover:scale-110 transition-transform ${deviceType === "android" ? "" : "text-emerald-500"}`} />
                     Google Play
+                  </a>
+                </Button>
+
+                <Button asChild variant={deviceType === "mac" || deviceType === null ? "default" : "outline"} size="lg" className="font-medium group">
+                  <a href={downloadLinks.mac} target="_blank" rel="noreferrer">
+                    <Apple className="w-4 h-4 me-2 group-hover:scale-110 transition-transform" />
+                    macOS (.dmg)
+                  </a>
+                </Button>
+                <Button asChild variant={deviceType === "windows" ? "default" : "outline"} size="lg" className="font-medium group border-blue-500/30 hover:bg-blue-500/10">
+                  <a href={downloadLinks.windows} target="_blank" rel="noreferrer">
+                    <Monitor className={`w-4 h-4 me-2 group-hover:scale-110 transition-transform ${deviceType === "windows" ? "" : "text-blue-500"}`} />
+                    Windows (.exe)
                   </a>
                 </Button>
               </div>

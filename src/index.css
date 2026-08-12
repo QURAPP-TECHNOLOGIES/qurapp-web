@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -41,8 +41,8 @@
     --gold: 38 65% 50%;
     
     /* Typography */
-    --font-display: 'Poppins', sans-serif;
-    --font-body: 'Poppins', 'Noto Sans Arabic', sans-serif;
+    --font-display: 'Montserrat', sans-serif;
+    --font-body: 'Open Sans', 'Noto Sans Arabic', sans-serif;
     
     /* Shadows */
     --shadow-soft: 0 4px 20px -4px hsl(24 45% 35% / 0.08);
@@ -116,8 +116,37 @@
     @apply bg-card/80 backdrop-blur-lg border border-border/50;
   }
 
+  .glass-premium {
+    @apply bg-card/40 backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden;
+    background-image: radial-gradient(circle at top left, rgba(255, 255, 255, 0.06), transparent 60%);
+  }
+
+  .bg-glow-spot {
+    background: radial-gradient(circle, hsl(var(--gold) / 0.15) 0%, transparent 70%);
+  }
+
+  .bg-glow-spot-emerald {
+    background: radial-gradient(circle, hsl(142 70% 45% / 0.12) 0%, transparent 70%);
+  }
+
+  .hover-glow-border {
+    @apply transition-all duration-500 hover:border-gold/30 hover:shadow-[0_0_20px_rgba(201,138,26,0.1)];
+  }
+
+  .hover-glow-border-emerald {
+    @apply transition-all duration-500 hover:border-emerald-500/30 hover:shadow-[0_0_20px_rgba(16,185,129,0.08)];
+  }
+
+  .hover-glow-border-blue {
+    @apply transition-all duration-500 hover:border-blue-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.08)];
+  }
+
+  .hover-glow-border-purple {
+    @apply transition-all duration-500 hover:border-purple-500/30 hover:shadow-[0_0_20px_rgba(168,85,247,0.08)];
+  }
+
   .hover-lift {
-    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+    @apply transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl;
   }
 
   .card-elevated {
@@ -172,4 +201,45 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary) / 0.5);
+}
+
+/* Custom phone input styling for react-international-phone in dark mode */
+.phone-input-dark .react-international-phone-input-container {
+  width: 100%;
+}
+
+.phone-input-dark .react-international-phone-input {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  font-size: 0.875rem !important;
+  height: 48px !important;
+}
+
+.phone-input-dark .react-international-phone-country-selector-button {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  height: 48px !important;
+  border-radius: 9999px 0 0 9999px !important;
+  padding-left: 12px !important;
+}
+
+.phone-input-dark .react-international-phone-country-selector-dropdown {
+  background-color: #09090b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border-radius: 8px !important;
+  padding: 4px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+}
+
+.phone-input-dark .react-international-phone-country-selector-dropdown-entry {
+  color: #e4e4e7 !important;
+  border-radius: 4px !important;
+  padding: 6px 8px !important;
+}
+
+.phone-input-dark .react-international-phone-country-selector-dropdown-entry:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
 }

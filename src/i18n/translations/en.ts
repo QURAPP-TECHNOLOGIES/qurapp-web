@@ -118,8 +118,8 @@ export const en = {
     titleHighlight: "Transparent Always.",
     description: "QurApp is built with sincerity and responsibility. No ads, core features free forever, guided by ethics and benefit to the Ummah.",
     items: [
-      { value: "150+", label: "Countries Reached" },
-      { value: "1M+", label: "Daily Recitations" },
+      // { value: "150+", label: "Countries Reached" },
+      // { value: "1M+", label: "Daily Recitations" },
       { value: "Free", label: "Core Features" },
       { value: "0", label: "Ads Forever" },
     ],

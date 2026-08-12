@@ -35,13 +35,13 @@ const AudienceSection = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.08 }}
-                className="flex items-start gap-4 p-6 rounded-2xl bg-card border border-border hover:shadow-card transition-all duration-300"
+                className="group flex items-start gap-4 p-6 rounded-2xl glass-premium hover-glow-border hover-lift cursor-pointer transition-all duration-500"
               >
-                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
                   <Icon className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-display text-lg font-semibold mb-1">{audience.title}</h3>
+                  <h3 className="font-display text-lg font-semibold mb-1 transition-colors group-hover:text-gold">{audience.title}</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">{audience.description}</p>
                 </div>
               </motion.div>

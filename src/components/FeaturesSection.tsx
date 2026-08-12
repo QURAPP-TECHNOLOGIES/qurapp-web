@@ -27,25 +27,26 @@ const FeaturesSection = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.7, delay: 0.1 }}
-                className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center"
+                 className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center"
               >
                 {/* Phone Mockup - Right side when reverse, Left side otherwise */}
                 <div className={`relative flex items-center justify-center self-center min-h-[400px] md:min-h-[500px] ${reverse ? "lg:col-start-2 lg:row-start-1" : "lg:col-start-1 lg:row-start-1"}`}>
-                  {/* Purple gradient background */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-[350px] h-[450px] rounded-[50px] bg-gradient-purple opacity-20 blur-xl" />
+                  {/* Alternating gold/emerald radial glow spots */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className={`w-[350px] h-[450px] rounded-full blur-[80px] opacity-30 ${index % 2 === 0 ? "bg-glow-spot" : "bg-glow-spot-emerald"}`} />
                   </div>
                   
                   <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ duration: 0.3 }}
-                    className="relative z-10 w-[260px] md:w-[300px]"
+                    whileHover={{ scale: 1.03, y: -8 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    className="relative z-10 w-[260px] md:w-[300px] hover-lift cursor-pointer"
                   >
-                    <div className="rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-muted bg-muted">
+                    {/* Glass premium casing for mockup */}
+                    <div className="rounded-[2.8rem] overflow-hidden shadow-2xl border border-white/10 bg-card/25 backdrop-blur-md p-3">
                       <img
                         src={images[index]}
                         alt={imageAlts[index]}
-                        className="w-full h-auto"
+                        className="w-full h-auto rounded-[2rem] overflow-hidden"
                       />
                     </div>
                   </motion.div>
