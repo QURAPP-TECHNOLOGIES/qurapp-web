@@ -38,8 +38,8 @@ const Donate = () => {
   });
 
   const { toast } = useToast();
-  const [region, setRegion] = useState<"international" | "nigeria">("international");
-  const [frequency, setFrequency] = useState<"one-time" | "monthly">("monthly");
+  const [region, setRegion] = useState<"international" | "nigeria">("nigeria");
+  const [frequency, setFrequency] = useState<"one-time" | "monthly">("one-time");
 
   // Amounts for International ($USD) vs Nigeria (₦NGN)
   const usdAmounts = [10, 25, 50, 100, 250];
@@ -67,7 +67,25 @@ const Donate = () => {
     }
   };
 
-  const [selectedAmount, setSelectedAmount] = useState<number>(25);
+  // Pre-set amounts mapped to Paystack Plan Codes
+  const paystackPlans: Record<string, Record<number, string>> = {
+    NGN: {
+      5000: import.meta.env.VITE_PAYSTACK_PLAN_NGN_5000 || "PLN_ngn_5000",
+      10000: import.meta.env.VITE_PAYSTACK_PLAN_NGN_10000 || "PLN_ngn_10000",
+      15000: import.meta.env.VITE_PAYSTACK_PLAN_NGN_15000 || "PLN_ngn_15000",
+      25000: import.meta.env.VITE_PAYSTACK_PLAN_NGN_25000 || "PLN_ngn_25000",
+      50000: import.meta.env.VITE_PAYSTACK_PLAN_NGN_50000 || "PLN_ngn_50000"
+    },
+    USD: {
+      10: import.meta.env.VITE_PAYSTACK_PLAN_USD_10 || "PLN_usd_10",
+      25: import.meta.env.VITE_PAYSTACK_PLAN_USD_25 || "PLN_usd_25",
+      50: import.meta.env.VITE_PAYSTACK_PLAN_USD_50 || "PLN_usd_50",
+      100: import.meta.env.VITE_PAYSTACK_PLAN_USD_100 || "PLN_usd_100",
+      250: import.meta.env.VITE_PAYSTACK_PLAN_USD_250 || "PLN_usd_250"
+    }
+  };
+
+  const [selectedAmount, setSelectedAmount] = useState<number>(5000);
   const [customAmount, setCustomAmount] = useState<string>("");
   const [donorEmail, setDonorEmail] = useState<string>("");
   const [donorName, setDonorName] = useState<string>("");
@@ -235,12 +253,32 @@ const Donate = () => {
 
       const paystackPublicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_d3a86377317e0ef75bf227efd7d3d86ef8e3a4b0";
 
+      let planCode: string | undefined = undefined;
+
+      if (frequency === "monthly") {
+        const currencyKey = currencyCode.toUpperCase();
+        const presetPlans = paystackPlans[currencyKey];
+        planCode = presetPlans ? presetPlans[currentAmount] : undefined;
+
+        if (!planCode) {
+          toast({
+            variant: "destructive",
+            title: "Custom Monthly Supporter",
+            description: "To donate monthly, please select one of our preset supporter tiers. Custom amounts are only supported for one-time contributions."
+          });
+          return;
+        }
+      }
+
+      let isSuccess = false;
+
       try {
         const handler = (window as any).PaystackPop.setup({
           key: paystackPublicKey,
           email: donorEmail,
           amount: Math.round(currentAmount * 100),
           currency: currencyCode,
+          plan: planCode,
           metadata: {
             custom_fields: [
               {
@@ -250,16 +288,19 @@ const Donate = () => {
               }
             ]
           },
-          callback: function(response: any) {
+          callback: function (response: any) {
+            isSuccess = true;
             handleSavePaystackDonation(response.reference);
           },
-          onClose: function() {
-            // Re-open our dialog modal so user can retry or adjust choices
-            setIsModalOpen(true);
-            toast({
-              title: "Transaction Cancelled",
-              description: "Payment checkout was not completed."
-            });
+          onClose: function () {
+            if (!isSuccess) {
+              // Re-open our dialog modal so user can retry or adjust choices
+              setIsModalOpen(true);
+              toast({
+                title: "Transaction Cancelled",
+                description: "Payment checkout was not completed."
+              });
+            }
           }
         });
 
@@ -491,8 +532,8 @@ const Donate = () => {
                     <button
                       onClick={() => handleRegionChange("international")}
                       className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${region === "international"
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "text-muted-foreground hover:text-foreground"
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
                       <Globe className="w-4 h-4" /> International ($USD)
@@ -500,8 +541,8 @@ const Donate = () => {
                     <button
                       onClick={() => handleRegionChange("nigeria")}
                       className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${region === "nigeria"
-                          ? "bg-emerald-600 text-white shadow-md"
-                          : "text-muted-foreground hover:text-foreground"
+                        ? "bg-emerald-600 text-white shadow-md"
+                        : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
                       <span className="text-sm">🇳🇬</span> Nigeria (₦NGN)
@@ -510,28 +551,32 @@ const Donate = () => {
                 </div>
 
                 {/* Frequency Toggle */}
-                <div className="flex justify-center pt-2">
-                  <div className="bg-muted/60 p-1 rounded-xl flex items-center gap-1 border border-border">
-                    <button
-                      onClick={() => setFrequency("monthly")}
-                      className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${frequency === "monthly"
-                          ? "bg-amber-500 text-slate-950 shadow-md"
-                          : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                      Monthly Supporter
-                    </button>
-                    <button
-                      onClick={() => setFrequency("one-time")}
-                      className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${frequency === "one-time"
-                          ? "bg-amber-500 text-slate-950 shadow-md"
-                          : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                      One-time Contribution
-                    </button>
-                  </div>
-                </div>
+                 <div className="flex justify-center pt-2">
+                   <div className="bg-muted/60 p-1.5 rounded-xl flex items-center gap-1.5 border border-border">
+                     <button
+                       onClick={() => setFrequency("monthly")}
+                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${frequency === "monthly"
+                         ? "bg-amber-500 text-slate-950 shadow-md"
+                         : "text-muted-foreground hover:text-foreground"
+                         }`}
+                     >
+                       <span>Monthly Supporter</span>
+                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold tracking-wide uppercase ${frequency === "monthly"
+                         ? "bg-slate-950/20 text-slate-950"
+                         : "bg-amber-500/20 text-amber-500"
+                         }`}>Sustainer 🌙</span>
+                     </button>
+                     <button
+                       onClick={() => setFrequency("one-time")}
+                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${frequency === "one-time"
+                         ? "bg-amber-500 text-slate-950 shadow-md"
+                         : "text-muted-foreground hover:text-foreground"
+                         }`}
+                     >
+                       One-time Contribution
+                     </button>
+                   </div>
+                 </div>
               </CardHeader>
 
               <CardContent className="p-8 space-y-8">
@@ -545,8 +590,8 @@ const Donate = () => {
                         setCustomAmount("");
                       }}
                       className={`py-3.5 px-4 rounded-xl font-bold font-display text-base sm:text-lg border transition-all ${selectedAmount === amt && !customAmount
-                          ? "border-amber-500 bg-amber-500/10 text-amber-500 shadow-sm"
-                          : "border-border/60 hover:border-amber-500/40 text-foreground bg-background"
+                        ? "border-amber-500 bg-amber-500/10 text-amber-500 shadow-sm"
+                        : "border-border/60 hover:border-amber-500/40 text-foreground bg-background"
                         }`}
                     >
                       {currencySymbol}{amt.toLocaleString()}
@@ -623,7 +668,7 @@ const Donate = () => {
                     <div className="flex items-center gap-2.5">
                       <div className="w-3.5 h-3.5 rounded-full bg-emerald-600" />
                       <div>
-                        <p className="font-semibold text-foreground">Core Compute Infrastructure (DigitalOcean)</p>
+                        <p className="font-semibold text-foreground">Core Compute Infrastructure</p>
                         <p className="text-[10px] text-muted-foreground">Databases, routers, notification engines, and API gateway services</p>
                       </div>
                     </div>
@@ -747,8 +792,8 @@ const Donate = () => {
                     <button
                       onClick={() => setPaymentMethod("paystack")}
                       className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "paystack"
-                          ? "border-amber-500 bg-amber-500/10 text-amber-500"
-                          : "border-border text-muted-foreground hover:border-foreground"
+                        ? "border-amber-500 bg-amber-500/10 text-amber-500"
+                        : "border-border text-muted-foreground hover:border-foreground"
                         }`}
                     >
                       <CreditCard className="w-5 h-5" />
@@ -772,8 +817,8 @@ const Donate = () => {
                     <button
                       onClick={() => setPaymentMethod("crypto")}
                       className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "crypto"
-                          ? "border-amber-500 bg-amber-500/10 text-amber-500"
-                          : "border-border text-muted-foreground hover:border-foreground"
+                        ? "border-amber-500 bg-amber-500/10 text-amber-500"
+                        : "border-border text-muted-foreground hover:border-foreground"
                         }`}
                     >
                       <Sparkles className="w-5 h-5" />
@@ -791,8 +836,8 @@ const Donate = () => {
                     <button
                       onClick={() => setPaymentMethod("paystack")}
                       className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "paystack"
-                          ? "border-emerald-500 bg-emerald-500/10 text-emerald-500"
-                          : "border-border text-muted-foreground hover:border-foreground"
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-500"
+                        : "border-border text-muted-foreground hover:border-foreground"
                         }`}
                     >
                       <CreditCard className="w-5 h-5 text-emerald-500" />
@@ -816,8 +861,8 @@ const Donate = () => {
                     <button
                       onClick={() => setPaymentMethod("bank_transfer")}
                       className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "bank_transfer"
-                          ? "border-blue-500 bg-blue-500/10 text-blue-500"
-                          : "border-border text-muted-foreground hover:border-foreground"
+                        ? "border-blue-500 bg-blue-500/10 text-blue-500"
+                        : "border-border text-muted-foreground hover:border-foreground"
                         }`}
                     >
                       <Landmark className="w-5 h-5 text-blue-500" />
@@ -867,8 +912,8 @@ const Donate = () => {
                         type="button"
                         onClick={() => setSelectedCrypto("usdt")}
                         className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${selectedCrypto === "usdt"
-                            ? "bg-amber-500 text-slate-950 shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
+                          ? "bg-amber-500 text-slate-950 shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
                           }`}
                       >
                         USDT (TRC20)
@@ -877,8 +922,8 @@ const Donate = () => {
                         type="button"
                         onClick={() => setSelectedCrypto("eth")}
                         className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${selectedCrypto === "eth"
-                            ? "bg-indigo-600 text-white shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
                           }`}
                       >
                         ETH (ERC20)
@@ -887,8 +932,8 @@ const Donate = () => {
                         type="button"
                         onClick={() => setSelectedCrypto("btc")}
                         className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${selectedCrypto === "btc"
-                            ? "bg-orange-500 text-white shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
+                          ? "bg-orange-500 text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
                           }`}
                       >
                         BTC
@@ -978,8 +1023,8 @@ const Donate = () => {
                         type="button"
                         onClick={() => setSelectedBank("kuda")}
                         className={`py-1.5 rounded-md text-[11px] font-bold transition-all ${selectedBank === "kuda"
-                            ? "bg-emerald-600 text-white shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
+                          ? "bg-emerald-600 text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
                           }`}
                       >
                         Kuda Bank
@@ -988,8 +1033,8 @@ const Donate = () => {
                         type="button"
                         onClick={() => setSelectedBank("taj")}
                         className={`py-1.5 rounded-md text-[11px] font-bold transition-all ${selectedBank === "taj"
-                            ? "bg-amber-600 text-white shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
+                          ? "bg-amber-600 text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
                           }`}
                       >
                         Taj Bank
