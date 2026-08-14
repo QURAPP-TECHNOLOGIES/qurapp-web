@@ -29,7 +29,9 @@ export const useSEO = ({
     const fullTitle = title ? `${title} | QurApp` : DEFAULT_TITLE;
     const finalDescription = description || DEFAULT_DESCRIPTION;
     const finalKeywords = keywords || DEFAULT_KEYWORDS;
-    const finalImage = image || DEFAULT_IMAGE;
+    const finalImage = image
+      ? (image.startsWith("http") ? image : `${SITE_URL}${image}`)
+      : DEFAULT_IMAGE;
     const finalUrl = url ? `${SITE_URL}${url}` : SITE_URL;
 
     // Update document title

@@ -26,7 +26,7 @@ import duahScreen from "@/assets/app-screenshots/duah-screen.jpeg";
 import duahCategory from "@/assets/app-screenshots/dua-cat.jpeg";
 import hisnulMuslimScreen from "@/assets/app-screenshots/hisnul-muslim-screen.jpeg";
 import tasbihScreen from "@/assets/app-screenshots/tasbih-screen.jpeg";
-import hslOpenGraph from "@/assets/hsl-open-graph.jpg";
+
 
 
 type DownloadLinks = {
@@ -51,7 +51,7 @@ const HisnulMuslim = () => {
     title: `${t.hisnulMuslimPage.title} - ${t.hisnulMuslimPage.subtitle} | Standalone Offline App`,
     description: t.hisnulMuslimPage.description,
     url: "/hisnul-muslim",
-    image: typeof window !== "undefined" ? window.location.origin + hslOpenGraph : hslOpenGraph,
+    image: "/hsl-open-graph.jpg",
   });
 
   useEffect(() => {
