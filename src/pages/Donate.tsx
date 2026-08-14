@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { 
+import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle
 } from "@/components/ui/dialog";
-import { 
-  Heart, ShieldCheck, Cpu, Award, Sparkles, CreditCard, 
+import {
+  Heart, ShieldCheck, Cpu, Award, Sparkles, CreditCard,
   Wallet, ExternalLink, Globe, Landmark, Mail, User, Copy, Check, Users
 } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
@@ -40,10 +40,11 @@ const Donate = () => {
   const { toast } = useToast();
   const [region, setRegion] = useState<"international" | "nigeria">("international");
   const [frequency, setFrequency] = useState<"one-time" | "monthly">("monthly");
-  
+
   // Amounts for International ($USD) vs Nigeria (₦NGN)
   const usdAmounts = [10, 25, 50, 100, 250];
-  const ngnAmounts = [2500, 5000, 10000, 25000, 50000];
+  // The min amount for NGN is 5000
+  const ngnAmounts = [5000, 10000, 15000, 25000, 50000];
 
   // Crypto addresses from env variables with standard fallbacks
   const cryptoAddresses = {
@@ -128,17 +129,82 @@ const Donate = () => {
 
   const loadPaystack = () => {
     return new Promise<boolean>((resolve) => {
-      if (window.PaystackPop) {
+      if ((window as any).PaystackPop) {
         resolve(true);
         return;
       }
+
+      const existingScript = document.querySelector('script[src="https://js.paystack.co/v1/inline.js"]');
+      if (existingScript) {
+        let attempts = 0;
+        const check = () => {
+          if ((window as any).PaystackPop) {
+            resolve(true);
+          } else if (attempts < 20) {
+            attempts++;
+            setTimeout(check, 100);
+          } else {
+            resolve(false);
+          }
+        };
+        check();
+        return;
+      }
+
       const script = document.createElement("script");
       script.src = "https://js.paystack.co/v1/inline.js";
       script.async = true;
-      script.onload = () => resolve(true);
+      script.onload = () => {
+        let attempts = 0;
+        const check = () => {
+          if ((window as any).PaystackPop) {
+            resolve(true);
+          } else if (attempts < 10) {
+            attempts++;
+            setTimeout(check, 50);
+          } else {
+            resolve(false);
+          }
+        };
+        check();
+      };
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
+  };
+
+  const handleSavePaystackDonation = async (reference: string) => {
+    try {
+      const apiRes = await fetch(`${apiGatewayUrl}/api/v1/donations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: donorName || "Anonymous Sender",
+          email: donorEmail,
+          amount: currentAmount,
+          currency: currencyCode,
+          paymentMethod: "paystack",
+          reference: reference
+        })
+      });
+
+      if (apiRes.ok) {
+        toast({
+          title: "Contribution Successful!",
+          description: "Jazak Allah Khair for supporting QurApp Technologies."
+        });
+        fetchStats(); // Update stats live!
+      } else {
+        throw new Error("Failed to save donation.");
+      }
+    } catch (e) {
+      console.error("Donation record error:", e);
+      toast({
+        title: "Payment Received",
+        description: `Payment complete, ref: ${reference}. Thank you!`
+      });
+    }
+    setIsModalOpen(false);
   };
 
   const handleProceedPayment = async () => {
@@ -169,57 +235,45 @@ const Donate = () => {
 
       const paystackPublicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_d3a86377317e0ef75bf227efd7d3d86ef8e3a4b0";
 
-      const handler = window.PaystackPop.setup({
-        key: paystackPublicKey,
-        email: donorEmail,
-        amount: Math.round(currentAmount * 100), // in kobo
-        currency: "NGN",
-        metadata: {
-          donor_name: donorName || "Anonymous Sender"
-        },
-        callback: async (response: any) => {
-          // Log donation to backend
-          try {
-            const apiRes = await fetch(`${apiGatewayUrl}/api/v1/donations`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: donorName || "Anonymous Sender",
-                email: donorEmail,
-                amount: currentAmount,
-                currency: "NGN",
-                paymentMethod: "paystack",
-                reference: response.reference
-              })
-            });
-
-            if (apiRes.ok) {
-              toast({
-                title: "Contribution Successful!",
-                description: "Jazak Allah Khair for supporting QurApp Technologies."
-              });
-              fetchStats(); // Update stats live!
-            } else {
-              throw new Error("Failed to save donation.");
-            }
-          } catch (e) {
-            console.error("Donation record error:", e);
+      try {
+        const handler = (window as any).PaystackPop.setup({
+          key: paystackPublicKey,
+          email: donorEmail,
+          amount: Math.round(currentAmount * 100),
+          currency: currencyCode,
+          metadata: {
+            custom_fields: [
+              {
+                display_name: "Donor Name",
+                variable_name: "donor_name",
+                value: donorName || "Anonymous Sender"
+              }
+            ]
+          },
+          callback: function(response: any) {
+            handleSavePaystackDonation(response.reference);
+          },
+          onClose: function() {
             toast({
-              title: "Payment Received",
-              description: `Payment complete, ref: ${response.reference}. Thank you!`
+              title: "Transaction Closed",
+              description: "Payment was not completed."
             });
           }
-          setIsModalOpen(false);
-        },
-        onClose: () => {
-          toast({
-            title: "Transaction Closed",
-            description: "Payment was not completed."
-          });
-        }
-      });
+        });
 
-      handler.openIframe();
+        if (handler && typeof handler.openIframe === 'function') {
+          handler.openIframe();
+        } else {
+          throw new Error("Paystack setup returned an invalid handler instance.");
+        }
+      } catch (err: any) {
+        console.error("Paystack popup setup failed:", err);
+        toast({
+          variant: "destructive",
+          title: "Payment Setup Failed",
+          description: err.message || "Failed to initialize Paystack checkout popup."
+        });
+      }
     } else if (paymentMethod === "bank_transfer") {
       await handleConfirmTransfer();
     } else if (paymentMethod === "crypto") {
@@ -379,7 +433,7 @@ const Donate = () => {
                         <span className="text-muted-foreground">Goal: $7,680 (₦10,598,400)</span>
                       </div>
                       <div className="w-full h-3.5 bg-muted rounded-full overflow-hidden border border-border shadow-inner">
-                        <div 
+                        <div
                           className="h-full bg-gradient-to-r from-amber-500 to-emerald-600 rounded-full transition-all duration-1000 ease-out"
                           style={{ width: `${stats?.percentage || 0}%` }}
                         />
@@ -432,21 +486,19 @@ const Donate = () => {
                   <div className="bg-background p-1.5 rounded-2xl flex items-center gap-1.5 border border-border shadow-inner">
                     <button
                       onClick={() => handleRegionChange("international")}
-                      className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-                        region === "international"
+                      className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${region === "international"
                           ? "bg-primary text-primary-foreground shadow-md"
                           : "text-muted-foreground hover:text-foreground"
-                      }`}
+                        }`}
                     >
                       <Globe className="w-4 h-4" /> International ($USD)
                     </button>
                     <button
                       onClick={() => handleRegionChange("nigeria")}
-                      className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-                        region === "nigeria"
+                      className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${region === "nigeria"
                           ? "bg-emerald-600 text-white shadow-md"
                           : "text-muted-foreground hover:text-foreground"
-                      }`}
+                        }`}
                     >
                       <span className="text-sm">🇳🇬</span> Nigeria (₦NGN)
                     </button>
@@ -458,21 +510,19 @@ const Donate = () => {
                   <div className="bg-muted/60 p-1 rounded-xl flex items-center gap-1 border border-border">
                     <button
                       onClick={() => setFrequency("monthly")}
-                      className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${
-                        frequency === "monthly"
+                      className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${frequency === "monthly"
                           ? "bg-amber-500 text-slate-950 shadow-md"
                           : "text-muted-foreground hover:text-foreground"
-                      }`}
+                        }`}
                     >
                       Monthly Supporter
                     </button>
                     <button
                       onClick={() => setFrequency("one-time")}
-                      className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${
-                        frequency === "one-time"
+                      className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${frequency === "one-time"
                           ? "bg-amber-500 text-slate-950 shadow-md"
                           : "text-muted-foreground hover:text-foreground"
-                      }`}
+                        }`}
                     >
                       One-time Contribution
                     </button>
@@ -490,11 +540,10 @@ const Donate = () => {
                         setSelectedAmount(amt);
                         setCustomAmount("");
                       }}
-                      className={`py-3.5 px-4 rounded-xl font-bold font-display text-base sm:text-lg border transition-all ${
-                        selectedAmount === amt && !customAmount
+                      className={`py-3.5 px-4 rounded-xl font-bold font-display text-base sm:text-lg border transition-all ${selectedAmount === amt && !customAmount
                           ? "border-amber-500 bg-amber-500/10 text-amber-500 shadow-sm"
                           : "border-border/60 hover:border-amber-500/40 text-foreground bg-background"
-                      }`}
+                        }`}
                     >
                       {currencySymbol}{amt.toLocaleString()}
                     </button>
@@ -522,8 +571,8 @@ const Donate = () => {
 
                 {/* Submit Trigger Modal */}
                 <div className="pt-4 text-center">
-                  <Button 
-                    size="lg" 
+                  <Button
+                    size="lg"
                     onClick={() => {
                       setTransferConfirmed(false);
                       setTransferRef("");
@@ -533,9 +582,9 @@ const Donate = () => {
                     }}
                     className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-10 text-base shadow-xl shadow-amber-500/20 gap-2"
                   >
-                    <Heart className="w-5 h-5 fill-slate-950" /> 
-                    {frequency === "monthly" 
-                      ? `Donate ${currencySymbol}${currentAmount.toLocaleString()} / month` 
+                    <Heart className="w-5 h-5 fill-slate-950" />
+                    {frequency === "monthly"
+                      ? `Donate ${currencySymbol}${currentAmount.toLocaleString()} / month`
                       : `Donate ${currencySymbol}${currentAmount.toLocaleString()} Once`}
                   </Button>
                 </div>
@@ -693,11 +742,10 @@ const Donate = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => setPaymentMethod("paystack")}
-                      className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${
-                        paymentMethod === "paystack"
+                      className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "paystack"
                           ? "border-amber-500 bg-amber-500/10 text-amber-500"
                           : "border-border text-muted-foreground hover:border-foreground"
-                      }`}
+                        }`}
                     >
                       <CreditCard className="w-5 h-5" />
                       <span>Card (Paystack)</span>
@@ -719,11 +767,10 @@ const Donate = () => {
 
                     <button
                       onClick={() => setPaymentMethod("crypto")}
-                      className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${
-                        paymentMethod === "crypto"
+                      className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "crypto"
                           ? "border-amber-500 bg-amber-500/10 text-amber-500"
                           : "border-border text-muted-foreground hover:border-foreground"
-                      }`}
+                        }`}
                     >
                       <Sparkles className="w-5 h-5" />
                       <span>Crypto</span>
@@ -739,11 +786,10 @@ const Donate = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => setPaymentMethod("paystack")}
-                      className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${
-                        paymentMethod === "paystack"
+                      className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "paystack"
                           ? "border-emerald-500 bg-emerald-500/10 text-emerald-500"
                           : "border-border text-muted-foreground hover:border-foreground"
-                      }`}
+                        }`}
                     >
                       <CreditCard className="w-5 h-5 text-emerald-500" />
                       <span>Paystack</span>
@@ -765,11 +811,10 @@ const Donate = () => {
 
                     <button
                       onClick={() => setPaymentMethod("bank_transfer")}
-                      className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${
-                        paymentMethod === "bank_transfer"
+                      className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "bank_transfer"
                           ? "border-blue-500 bg-blue-500/10 text-blue-500"
                           : "border-border text-muted-foreground hover:border-foreground"
-                      }`}
+                        }`}
                     >
                       <Landmark className="w-5 h-5 text-blue-500" />
                       <span>Bank Transfer</span>
@@ -811,39 +856,36 @@ const Donate = () => {
                 {paymentMethod === "crypto" && (
                   <div className="text-xs space-y-4 bg-background p-4 rounded-xl border border-border">
                     <p className="font-bold text-foreground">Select Recipient Crypto Asset:</p>
-                    
+
                     {/* Crypto Selector Tabs */}
                     <div className="grid grid-cols-3 gap-1 bg-muted/40 p-1 rounded-lg border border-border/60">
                       <button
                         type="button"
                         onClick={() => setSelectedCrypto("usdt")}
-                        className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${
-                          selectedCrypto === "usdt"
+                        className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${selectedCrypto === "usdt"
                             ? "bg-amber-500 text-slate-950 shadow-sm"
                             : "text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         USDT (TRC20)
                       </button>
                       <button
                         type="button"
                         onClick={() => setSelectedCrypto("eth")}
-                        className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${
-                          selectedCrypto === "eth"
+                        className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${selectedCrypto === "eth"
                             ? "bg-indigo-600 text-white shadow-sm"
                             : "text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         ETH (ERC20)
                       </button>
                       <button
                         type="button"
                         onClick={() => setSelectedCrypto("btc")}
-                        className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${
-                          selectedCrypto === "btc"
+                        className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${selectedCrypto === "btc"
                             ? "bg-orange-500 text-white shadow-sm"
                             : "text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         BTC
                       </button>
@@ -860,22 +902,22 @@ const Donate = () => {
                         <span className="text-muted-foreground font-sans">Deposit Address:</span>
                         <div className="flex items-center justify-between gap-1.5 bg-muted/50 p-2 rounded-lg border border-border/60">
                           <strong className="text-emerald-500 select-all font-semibold">
-                            {selectedCrypto === "usdt" 
-                              ? cryptoAddresses.usdt 
-                              : selectedCrypto === "eth" 
-                              ? cryptoAddresses.eth 
-                              : cryptoAddresses.btc}
+                            {selectedCrypto === "usdt"
+                              ? cryptoAddresses.usdt
+                              : selectedCrypto === "eth"
+                                ? cryptoAddresses.eth
+                                : cryptoAddresses.btc}
                           </strong>
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => copyToClipboard(
-                              selectedCrypto === "usdt" 
-                                ? cryptoAddresses.usdt 
-                                : selectedCrypto === "eth" 
-                                ? cryptoAddresses.eth 
-                                : cryptoAddresses.btc, 
+                              selectedCrypto === "usdt"
+                                ? cryptoAddresses.usdt
+                                : selectedCrypto === "eth"
+                                  ? cryptoAddresses.eth
+                                  : cryptoAddresses.btc,
                               "Deposit address"
-                            )} 
+                            )}
                             className="text-primary hover:text-primary-foreground p-0.5"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -925,28 +967,26 @@ const Donate = () => {
                 {paymentMethod === "bank_transfer" && (
                   <div className="text-xs space-y-3 bg-background p-4 rounded-xl border border-border">
                     <p className="font-bold text-foreground">Select Recipient Bank for Local Transfer:</p>
-                    
+
                     {/* Bank Tabs Selector */}
                     <div className="grid grid-cols-2 gap-2 bg-muted/40 p-1 rounded-lg border border-border/60">
                       <button
                         type="button"
                         onClick={() => setSelectedBank("kuda")}
-                        className={`py-1.5 rounded-md text-[11px] font-bold transition-all ${
-                          selectedBank === "kuda"
+                        className={`py-1.5 rounded-md text-[11px] font-bold transition-all ${selectedBank === "kuda"
                             ? "bg-emerald-600 text-white shadow-sm"
                             : "text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         Kuda Bank
                       </button>
                       <button
                         type="button"
                         onClick={() => setSelectedBank("taj")}
-                        className={`py-1.5 rounded-md text-[11px] font-bold transition-all ${
-                          selectedBank === "taj"
+                        className={`py-1.5 rounded-md text-[11px] font-bold transition-all ${selectedBank === "taj"
                             ? "bg-amber-600 text-white shadow-sm"
                             : "text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         Taj Bank
                       </button>
@@ -959,12 +999,12 @@ const Donate = () => {
                           <strong className="text-foreground">
                             {selectedBank === "kuda" ? bankDetails.kuda.name : bankDetails.taj.name}
                           </strong>
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => copyToClipboard(
-                              selectedBank === "kuda" ? bankDetails.kuda.name : bankDetails.taj.name, 
+                              selectedBank === "kuda" ? bankDetails.kuda.name : bankDetails.taj.name,
                               "Bank name"
-                            )} 
+                            )}
                             className="text-primary hover:text-primary-foreground p-0.5"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -977,12 +1017,12 @@ const Donate = () => {
                           <strong className="text-foreground">
                             {selectedBank === "kuda" ? bankDetails.kuda.accountName : bankDetails.taj.accountName}
                           </strong>
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => copyToClipboard(
-                              selectedBank === "kuda" ? bankDetails.kuda.accountName : bankDetails.taj.accountName, 
+                              selectedBank === "kuda" ? bankDetails.kuda.accountName : bankDetails.taj.accountName,
                               "Account name"
-                            )} 
+                            )}
                             className="text-primary hover:text-primary-foreground p-0.5"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -995,12 +1035,12 @@ const Donate = () => {
                           <strong className="text-foreground font-mono text-emerald-500 text-sm">
                             {selectedBank === "kuda" ? bankDetails.kuda.accountNumber : bankDetails.taj.accountNumber}
                           </strong>
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => copyToClipboard(
-                              selectedBank === "kuda" ? bankDetails.kuda.accountNumber : bankDetails.taj.accountNumber, 
+                              selectedBank === "kuda" ? bankDetails.kuda.accountNumber : bankDetails.taj.accountNumber,
                               "Account number"
-                            )} 
+                            )}
                             className="text-primary hover:text-primary-foreground p-0.5"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -1043,7 +1083,7 @@ const Donate = () => {
               </div>
 
               {paymentMethod !== "bank_transfer" && paymentMethod !== "crypto" && (
-                <Button 
+                <Button
                   onClick={handleProceedPayment}
                   className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold gap-2"
                 >
