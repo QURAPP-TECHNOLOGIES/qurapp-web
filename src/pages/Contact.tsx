@@ -20,20 +20,54 @@ const Contact = () => {
     description: "Have questions about QurApp? Contact our support team. We're here to help with any inquiries about our Islamic social media platform.",
     url: "/contact",
   });
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     subject: "",
     message: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: t.contact.toast.title,
-      description: t.contact.toast.description,
-    });
-    setFormData({ name: "", email: "", subject: "", message: "" });
+    if (!formData.email || !formData.message || !formData.name) return;
+
+    setIsSubmitting(true);
+    try {
+      const apiGatewayUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        subject: formData.subject.trim(),
+        message: formData.message.trim(),
+      };
+
+      const res = await fetch(`${apiGatewayUrl}/api/v1/contact`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed to send message.");
+
+      toast({
+        title: t.contact.toast.title,
+        description: t.contact.toast.description,
+      });
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (err) {
+      console.error("Contact form error:", err);
+      toast({
+        variant: "destructive",
+        title: "Submission Failed",
+        description: "There was a problem sending your message. Please try again later.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -168,8 +202,8 @@ const Contact = () => {
                   />
                 </div>
 
-                <Button type="submit" className="w-full" size="lg">
-                  {t.contact.form.submit}
+                <Button type="submit" disabled={isSubmitting} className="w-full" size="lg">
+                  {isSubmitting ? "Sending..." : t.contact.form.submit}
                   <Send className="w-4 h-4 ms-2" />
                 </Button>
               </form>

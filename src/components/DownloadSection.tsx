@@ -149,7 +149,7 @@ const DownloadSection = () => {
             ) : (
               <div className="flex-1 w-full relative phone-input-dark">
                 <PhoneInput
-                  defaultCountry="sa"
+                  defaultCountry="ng"
                   value={phoneNumber}
                   onChange={(phone) => setPhoneNumber(phone)}
                   inputClassName="w-full h-[48px] rounded-full border border-white/10 bg-black/40 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm glass-premium"

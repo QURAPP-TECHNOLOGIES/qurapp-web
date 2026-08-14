@@ -213,13 +213,13 @@
   color: white !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
   font-size: 0.875rem !important;
-  height: 48px !important;
+  height: inherit !important;
 }
 
 .phone-input-dark .react-international-phone-country-selector-button {
   background-color: rgba(0, 0, 0, 0.4) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
-  height: 48px !important;
+  height: inherit !important;
   border-radius: 9999px 0 0 9999px !important;
   padding-left: 12px !important;
 }

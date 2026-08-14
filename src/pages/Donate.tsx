@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,25 @@ import {
 } from "@/components/ui/dialog";
 import { 
   Heart, ShieldCheck, Cpu, Award, Sparkles, CreditCard, 
-  Wallet, ExternalLink, Globe, Landmark, Mail, User
+  Wallet, ExternalLink, Globe, Landmark, Mail, User, Copy, Check, Users
 } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import { useToast } from "@/hooks/use-toast";
+
+declare global {
+  interface Window {
+    PaystackPop?: any;
+  }
+}
+
+interface CampaignStats {
+  totalUsd: number;
+  totalNgn: number;
+  donorCount: number;
+  percentage: number;
+  goalUsd: number;
+  goalNgn: number;
+}
 
 const Donate = () => {
   useSEO({
@@ -40,10 +55,38 @@ const Donate = () => {
     "stripe" | "paypal" | "crypto" | "paystack" | "flutterwave" | "bank_transfer"
   >("stripe");
 
-  const handleRegionChange = (newRegion: "international" | "nigeria") => {
-    setRegion(newRegion);
+  const [selectedBank, setSelectedBank] = useState<"kuda" | "taj">("kuda");
+  const [transferRef, setTransferRef] = useState("");
+  const [isSubmittingTransfer, setIsSubmittingTransfer] = useState(false);
+  const [transferConfirmed, setTransferConfirmed] = useState(false);
+
+  const [stats, setStats] = useState<CampaignStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  const apiGatewayUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch(`${apiGatewayUrl}/api/v1/donations/stats`);
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
+      }
+    } catch (e) {
+      console.error("Failed to load donation campaign stats:", e);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, [apiGatewayUrl]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  const handleRegionChange = (regionVal: "international" | "nigeria") => {
+    setRegion(regionVal);
     setCustomAmount("");
-    if (newRegion === "nigeria") {
+    if (regionVal === "nigeria") {
       setSelectedAmount(5000);
       setPaymentMethod("paystack");
     } else {
@@ -57,12 +100,164 @@ const Donate = () => {
   const activeAmounts = region === "nigeria" ? ngnAmounts : usdAmounts;
   const currentAmount = customAmount ? parseFloat(customAmount) || 0 : selectedAmount;
 
-  const handleProceedPayment = () => {
-    toast({
-      title: "Connecting to Payment Gateway...",
-      description: `Initiating ${currencySymbol}${currentAmount.toLocaleString()} ${currencyCode} contribution via ${paymentMethod.toUpperCase()}${donorEmail ? ` (Receipt: ${donorEmail})` : ''}.`,
+  const loadPaystack = () => {
+    return new Promise<boolean>((resolve) => {
+      if (window.PaystackPop) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://js.paystack.co/v1/inline.js";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
     });
-    setIsModalOpen(false);
+  };
+
+  const handleProceedPayment = async () => {
+    if (paymentMethod === "paystack") {
+      if (!donorEmail) {
+        toast({
+          variant: "destructive",
+          title: "Email Required",
+          description: "Please enter your email address to receive your payment confirmation."
+        });
+        return;
+      }
+
+      toast({
+        title: "Loading Paystack...",
+        description: "Launching secure payment window..."
+      });
+
+      const loaded = await loadPaystack();
+      if (!loaded) {
+        toast({
+          variant: "destructive",
+          title: "Payment Gateway Error",
+          description: "Failed to load Paystack script. Please check your internet connection."
+        });
+        return;
+      }
+
+      const paystackPublicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_d3a86377317e0ef75bf227efd7d3d86ef8e3a4b0";
+
+      const handler = window.PaystackPop.setup({
+        key: paystackPublicKey,
+        email: donorEmail,
+        amount: Math.round(currentAmount * 100), // in kobo
+        currency: "NGN",
+        metadata: {
+          donor_name: donorName || "Anonymous Sender"
+        },
+        callback: async (response: any) => {
+          // Log donation to backend
+          try {
+            const apiRes = await fetch(`${apiGatewayUrl}/api/v1/donations`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: donorName || "Anonymous Sender",
+                email: donorEmail,
+                amount: currentAmount,
+                currency: "NGN",
+                paymentMethod: "paystack",
+                reference: response.reference
+              })
+            });
+
+            if (apiRes.ok) {
+              toast({
+                title: "Contribution Successful!",
+                description: "Jazak Allah Khair for supporting QurApp Technologies."
+              });
+              fetchStats(); // Update stats live!
+            } else {
+              throw new Error("Failed to save donation.");
+            }
+          } catch (e) {
+            console.error("Donation record error:", e);
+            toast({
+              title: "Payment Received",
+              description: `Payment complete, ref: ${response.reference}. Thank you!`
+            });
+          }
+          setIsModalOpen(false);
+        },
+        onClose: () => {
+          toast({
+            title: "Transaction Closed",
+            description: "Payment was not completed."
+          });
+        }
+      });
+
+      handler.openIframe();
+    } else if (paymentMethod === "bank_transfer") {
+      await handleConfirmTransfer();
+    } else {
+      // Stripe / PayPal Mock fallback
+      toast({
+        title: "Connecting to Payment Gateway...",
+        description: `Initiating ${currencySymbol}${currentAmount.toLocaleString()} ${currencyCode} contribution via ${paymentMethod.toUpperCase()}.`,
+      });
+      setIsModalOpen(false);
+    }
+  };
+
+  const handleConfirmTransfer = async () => {
+    if (!donorEmail) {
+      toast({
+        variant: "destructive",
+        title: "Email Required",
+        description: "Please enter your email address to help us identify your manual transfer."
+      });
+      return;
+    }
+    setIsSubmittingTransfer(true);
+    try {
+      const res = await fetch(`${apiGatewayUrl}/api/v1/donations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: donorName || "Anonymous Sender",
+          email: donorEmail,
+          amount: currentAmount,
+          currency: "NGN",
+          paymentMethod: `bank_transfer (${selectedBank.toUpperCase()})`,
+          reference: transferRef || `TRF-${selectedBank.toUpperCase()}-${Date.now()}`
+        })
+      });
+      if (!res.ok) throw new Error("Failed to log transfer receipt.");
+      toast({
+        title: "Transfer Logged!",
+        description: `Thank you! Our finance team will verify the transfer in our ${selectedBank.toUpperCase()} account within 24 hours.`,
+      });
+      setTransferConfirmed(true);
+      setTransferRef("");
+      fetchStats(); // Update stats live!
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setTransferConfirmed(false);
+      }, 3000);
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Submission Error",
+        description: "Failed to submit transfer confirmation. Please try again."
+      });
+    } finally {
+      setIsSubmittingTransfer(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: `${label} copied to clipboard.`
+    });
   };
 
   return (
@@ -88,9 +283,75 @@ const Donate = () => {
           </div>
         </section>
 
-        {/* Donation Form & Tiers */}
         <section className="py-16">
-          <div className="container max-w-4xl space-y-12">
+          <div className="container max-w-4xl space-y-10">
+            {/* Live Progress Tracker Card */}
+            <Card className="border-amber-500/20 bg-card/60 backdrop-blur-md shadow-lg overflow-hidden">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
+                  Annual Operations Campaign (1st Year Launch)
+                </CardTitle>
+                <CardDescription>
+                  Help us cover our launch operating infrastructure costs and guarantee a 100% ad-free experience.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {loadingStats ? (
+                  <div className="py-6 flex flex-col items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs text-muted-foreground">Calculating live progress...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Progress Bar */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span className="text-amber-500 font-bold">{stats?.percentage || 0}% Raised</span>
+                        <span className="text-muted-foreground">Goal: $7,680 (₦10,598,400)</span>
+                      </div>
+                      <div className="w-full h-3.5 bg-muted rounded-full overflow-hidden border border-border shadow-inner">
+                        <div 
+                          className="h-full bg-gradient-to-r from-amber-500 to-emerald-600 rounded-full transition-all duration-1000 ease-out"
+                          style={{ width: `${stats?.percentage || 0}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Stats Rows */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+                      <div className="bg-background/40 p-3.5 rounded-xl border border-border/50 text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">Raised USD</p>
+                        <p className="text-lg font-bold text-foreground mt-1">
+                          ${(stats?.totalUsd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div className="bg-background/40 p-3.5 rounded-xl border border-border/50 text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">Raised NGN</p>
+                        <p className="text-lg font-bold text-foreground mt-1">
+                          ₦{(stats?.totalNgn || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div className="bg-background/40 p-3.5 rounded-xl border border-border/50 text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">Remaining</p>
+                        <p className="text-lg font-bold text-foreground mt-1">
+                          ${Math.max(0, 7680 - (stats?.totalUsd || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div className="bg-background/40 p-3.5 rounded-xl border border-border/50 text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">Supporters</p>
+                        <p className="text-lg font-bold text-foreground mt-1 flex items-center justify-center gap-1.5">
+                          <Users className="w-4 h-4 text-emerald-500" />
+                          {stats?.donorCount || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Donation Form & Tiers */}
             <Card className="border-amber-500/30 bg-card shadow-2xl overflow-hidden">
               <CardHeader className="bg-muted/30 border-b border-border/60 text-center pb-8 space-y-4">
                 <CardTitle className="text-2xl font-bold font-display">Choose Support Amount</CardTitle>
@@ -195,7 +456,11 @@ const Donate = () => {
                 <div className="pt-4 text-center">
                   <Button 
                     size="lg" 
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                      setTransferConfirmed(false);
+                      setTransferRef("");
+                      setIsModalOpen(true);
+                    }}
                     className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-10 text-base shadow-xl shadow-amber-500/20 gap-2"
                   >
                     <Heart className="w-5 h-5 fill-slate-950" /> 
@@ -203,6 +468,60 @@ const Donate = () => {
                       ? `Donate ${currencySymbol}${currentAmount.toLocaleString()} / month` 
                       : `Donate ${currencySymbol}${currentAmount.toLocaleString()} Once`}
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Campaign Cost Breakdown Card & Flyer Asset details */}
+            <Card className="border-border/60 bg-card overflow-hidden">
+              <CardHeader className="bg-muted/10 border-b border-border/40 pb-5">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <Cpu className="w-5 h-5 text-primary animate-pulse" />
+                  Monthly Operational Cost Breakdown (50,000 MAU MVP)
+                </CardTitle>
+                <CardDescription>
+                  100% of your contributions go directly toward running our cloud and verification infrastructure.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6 space-y-5">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-sm p-3 bg-muted/30 rounded-xl border border-border/50">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-3.5 h-3.5 rounded-full bg-amber-500" />
+                      <div>
+                        <p className="font-semibold text-foreground">Managed Real-Time Audio Room CDN</p>
+                        <p className="text-[10px] text-muted-foreground">High-performance streams, scholar panels, and khatmah sync</p>
+                      </div>
+                    </div>
+                    <span className="font-bold text-foreground">$500/mo</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-sm p-3 bg-muted/30 rounded-xl border border-border/50">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-3.5 h-3.5 rounded-full bg-emerald-600" />
+                      <div>
+                        <p className="font-semibold text-foreground">Core Compute Infrastructure (DigitalOcean)</p>
+                        <p className="text-[10px] text-muted-foreground">Databases, routers, notification engines, and API gateway services</p>
+                      </div>
+                    </div>
+                    <span className="font-bold text-foreground">$112/mo</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-sm p-3 bg-muted/30 rounded-xl border border-border/50">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-3.5 h-3.5 rounded-full bg-slate-500" />
+                      <div>
+                        <p className="font-semibold text-foreground">Storage, CDNs & Miscellaneous</p>
+                        <p className="text-[10px] text-muted-foreground">S3 file uploads, daily backups, static page hosting assets</p>
+                      </div>
+                    </div>
+                    <span className="font-bold text-foreground">$28/mo</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center font-bold text-base p-4 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl">
+                  <span>Total Monthly Target Operational Cost:</span>
+                  <span>$640 / Month</span>
                 </div>
               </CardContent>
             </Card>
@@ -265,10 +584,14 @@ const Donate = () => {
               {/* Optional Donor Information */}
               <div className="space-y-3 p-3.5 rounded-xl bg-muted/30 border border-border">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                  <div className="flex justify-between text-xs font-semibold text-foreground">
                     <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-amber-500" /> Donor Email</span>
-                    <span className="text-[10px] text-muted-foreground font-normal">Optional (for receipt)</span>
-                  </label>
+                    {paymentMethod === "paystack" || paymentMethod === "bank_transfer" ? (
+                      <span className="text-[10px] text-red-500 font-bold">* Required</span>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground font-normal">Optional</span>
+                    )}
+                  </div>
                   <Input
                     type="email"
                     placeholder="e.g. donor@example.com"
@@ -281,7 +604,7 @@ const Donate = () => {
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-foreground flex items-center justify-between">
                     <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-amber-500" /> Donor Name</span>
-                    <span className="text-[10px] text-muted-foreground font-normal">Optional (or leave blank)</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">Optional</span>
                   </label>
                   <Input
                     type="text"
@@ -434,21 +757,120 @@ const Donate = () => {
                   </p>
                 )}
                 {paymentMethod === "bank_transfer" && (
-                  <div className="text-xs space-y-1 bg-background p-3 rounded-lg border border-border">
-                    <p className="font-bold text-foreground">QurApp Local Bank Transfer (Nigeria):</p>
-                    <p className="text-muted-foreground">Bank: <strong className="text-foreground">GTBank / Zenith Bank</strong></p>
-                    <p className="text-muted-foreground">Account Name: <strong className="text-foreground">QurApp Technologies</strong></p>
-                    <p className="text-muted-foreground font-mono">Account No: <strong className="text-emerald-500">0123456789</strong></p>
+                  <div className="text-xs space-y-4 bg-background p-4 rounded-xl border border-border">
+                    <p className="font-bold text-foreground">Select Recipient Bank for Local Transfer:</p>
+                    
+                    {/* Bank Tabs Selector */}
+                    <div className="grid grid-cols-2 gap-2 bg-muted/40 p-1 rounded-lg border border-border/60">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBank("kuda")}
+                        className={`py-1.5 rounded-md text-[11px] font-bold transition-all ${
+                          selectedBank === "kuda"
+                            ? "bg-emerald-600 text-white shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Kuda Bank
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBank("taj")}
+                        className={`py-1.5 rounded-md text-[11px] font-bold transition-all ${
+                          selectedBank === "taj"
+                            ? "bg-amber-600 text-white shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Taj Bank
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 pt-1">
+                      <div className="flex justify-between items-center py-1 border-b border-border/50">
+                        <span className="text-muted-foreground">Bank Name:</span>
+                        <div className="flex items-center gap-1.5">
+                          <strong className="text-foreground">{selectedBank === "kuda" ? "Kuda Bank" : "Taj Bank"}</strong>
+                          <button 
+                            type="button" 
+                            onClick={() => copyToClipboard(selectedBank === "kuda" ? "Kuda Bank" : "Taj Bank", "Bank name")} 
+                            className="text-primary hover:text-primary-foreground p-0.5"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-border/50">
+                        <span className="text-muted-foreground">Account Name:</span>
+                        <div className="flex items-center gap-1.5">
+                          <strong className="text-foreground">QURAPP TECHNOLOGIES LTD</strong>
+                          <button 
+                            type="button" 
+                            onClick={() => copyToClipboard("QURAPP TECHNOLOGIES LTD", "Account name")} 
+                            className="text-primary hover:text-primary-foreground p-0.5"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-border/50">
+                        <span className="text-muted-foreground">Account Number:</span>
+                        <div className="flex items-center gap-1.5">
+                          <strong className="text-foreground font-mono text-emerald-500 text-sm">
+                            {selectedBank === "kuda" ? "3003376509" : "0013928718"}
+                          </strong>
+                          <button 
+                            type="button" 
+                            onClick={() => copyToClipboard(selectedBank === "kuda" ? "3003376509" : "0013928718", "Account number")} 
+                            className="text-primary hover:text-primary-foreground p-0.5"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {!transferConfirmed ? (
+                      <div className="space-y-2 pt-2 border-t mt-2">
+                        <p className="font-semibold text-foreground text-[11px]">Confirm Transfer Receipt:</p>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="e.g. Reference No / Sender Name"
+                            value={transferRef}
+                            onChange={(e) => setTransferRef(e.target.value)}
+                            className="h-8 text-xs bg-card"
+                          />
+                          <Button
+                            size="sm"
+                            type="button"
+                            disabled={isSubmittingTransfer}
+                            onClick={handleConfirmTransfer}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-8 px-3"
+                          >
+                            {isSubmittingTransfer ? "Sending..." : "Notify Transfer"}
+                          </Button>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          Enter your transaction reference or bank transfer name, and click notify once sent.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-center rounded-lg font-semibold text-xs">
+                        ✓ Transfer receipt logged successfully!
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              <Button 
-                onClick={handleProceedPayment}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold gap-2"
-              >
-                Proceed to Payment Gateway <ExternalLink className="w-4 h-4" />
-              </Button>
+              {paymentMethod !== "bank_transfer" && (
+                <Button 
+                  onClick={handleProceedPayment}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold gap-2"
+                >
+                  Proceed to Payment Gateway <ExternalLink className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </DialogContent>
         </Dialog>

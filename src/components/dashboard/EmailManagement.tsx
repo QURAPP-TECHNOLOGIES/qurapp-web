@@ -12,7 +12,9 @@ import {
   FileText,
   Copy,
   Check,
-  ExternalLink
+  ExternalLink,
+  MessageSquare,
+  Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,13 +30,47 @@ type Subscriber = {
   createdAt: string;
 };
 
+type ContactInquiry = {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: "unread" | "replied" | "ignored";
+  replyMessage: string | null;
+  repliedAt: string | null;
+  createdAt: string;
+};
+
+type DonationRecord = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  reference: string | null;
+  status: string;
+  createdAt: string;
+};
+
 export function EmailManagement() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"list" | "email-templates" | "sms-templates">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "inquiries" | "email-templates" | "sms-templates" | "donations">("list");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const [inquiries, setInquiries] = useState<ContactInquiry[]>([]);
+  const [inquiriesLoading, setInquiriesLoading] = useState(false);
+  const [selectedInquiry, setSelectedInquiry] = useState<ContactInquiry | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [sendingReplyId, setSendingReplyId] = useState<string | null>(null);
+
+  const [donations, setDonations] = useState<DonationRecord[]>([]);
+  const [donationsLoading, setDonationsLoading] = useState(false);
+  const [approvingDonationId, setApprovingDonationId] = useState<string | null>(null);
 
   const { toast } = useToast();
   const apiGatewayUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -61,9 +97,180 @@ export function EmailManagement() {
     }
   }, [apiGatewayUrl, toast]);
 
+  const fetchInquiries = useCallback(async () => {
+    setInquiriesLoading(true);
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/contact`);
+      if (res.ok) {
+        const data: ContactInquiry[] = await res.json();
+        setInquiries(data);
+      } else {
+        throw new Error("Failed to fetch contact inquiries.");
+      }
+    } catch (error: any) {
+      console.error("Error fetching inquiries:", error);
+      toast({
+        title: "Error Loading Inquiries",
+        description: error?.message || String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setInquiriesLoading(false);
+    }
+  }, [apiGatewayUrl, toast]);
+
+  const fetchDonations = useCallback(async () => {
+    setDonationsLoading(true);
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/donations`);
+      if (res.ok) {
+        const data: DonationRecord[] = await res.json();
+        setDonations(data);
+      } else {
+        throw new Error("Failed to fetch donation records.");
+      }
+    } catch (error: any) {
+      console.error("Error fetching donations:", error);
+      toast({
+        title: "Error Loading Donations",
+        description: error?.message || String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setDonationsLoading(false);
+    }
+  }, [apiGatewayUrl, toast]);
+
   useEffect(() => {
-    fetchSubscribers();
-  }, [fetchSubscribers]);
+    if (activeTab === "list") {
+      fetchSubscribers();
+    } else if (activeTab === "inquiries") {
+      fetchInquiries();
+    } else if (activeTab === "donations") {
+      fetchDonations();
+    }
+  }, [activeTab, fetchSubscribers, fetchInquiries, fetchDonations]);
+
+  const handleApproveDonation = async (id: string) => {
+    setApprovingDonationId(id);
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/donations/${id}/approve`, {
+        method: "POST"
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        toast({
+          title: "Donation Approved",
+          description: "Transaction status updated to SUCCESS.",
+        });
+        setDonations((prev) =>
+          prev.map((item) => (item.id === id ? result.data : item))
+        );
+      } else {
+        throw new Error("Failed to approve donation transaction.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Approval Failed",
+        description: error?.message || String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setApprovingDonationId(null);
+    }
+  };
+
+  const handleDeleteDonation = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this donation record?")) return;
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/donations/${id}`, {
+        method: "DELETE"
+      });
+
+      if (res.ok) {
+        setDonations((prev) => prev.filter((item) => item.id !== id));
+        toast({
+          title: "Record Deleted",
+          description: "Donation transaction record removed.",
+        });
+      } else {
+        throw new Error("Failed to delete donation record.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Delete Failed",
+        description: error?.message || String(error),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReplyInquiry = async (id: string) => {
+    if (!replyText.trim()) return;
+    setSendingReplyId(id);
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/contact/${id}/reply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ replyMessage: replyText }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        toast({
+          title: "Reply Dispatched",
+          description: "Response sent via Resend API and status updated to Replied.",
+        });
+        setInquiries((prev) =>
+          prev.map((item) => (item.id === id ? result.data : item))
+        );
+        setSelectedInquiry(null);
+        setReplyText("");
+      } else {
+        const errData = await res.json();
+        throw new Error(errData?.message || "Failed to submit reply email.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Reply Failed",
+        description: error?.message || String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setSendingReplyId(null);
+    }
+  };
+
+  const handleDeleteInquiry = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this contact message?")) return;
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/contact/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setInquiries((prev) => prev.filter((item) => item.id !== id));
+        toast({
+          title: "Inquiry Deleted",
+          description: "Contact inquiry deleted successfully.",
+        });
+        if (selectedInquiry?.id === id) {
+          setSelectedInquiry(null);
+        }
+      } else {
+        throw new Error("Failed to delete contact inquiry.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Delete Failed",
+        description: error?.message || String(error),
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleDeleteSubscriber = async (id: string) => {
     setIsDeletingId(id);
@@ -368,6 +575,28 @@ export function EmailManagement() {
           Subscribers List
         </button>
         <button
+          onClick={() => setActiveTab("inquiries")}
+          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${
+            activeTab === "inquiries"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <MessageSquare className="h-4 w-4" />
+          Contact Inquiries
+        </button>
+        <button
+          onClick={() => setActiveTab("donations")}
+          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${
+            activeTab === "donations"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Heart className="h-4 w-4" />
+          Donation History
+        </button>
+        <button
           onClick={() => setActiveTab("email-templates")}
           className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${
             activeTab === "email-templates"
@@ -599,6 +828,300 @@ export function EmailManagement() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {activeTab === "inquiries" && (
+        <div className="space-y-4">
+          <div className="bg-card rounded-xl border border-border/50 overflow-hidden">
+            {inquiriesLoading ? (
+              <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
+                <p className="text-sm">Loading contact inquiries...</p>
+              </div>
+            ) : inquiries.length === 0 ? (
+              <div className="p-12 text-center text-muted-foreground">
+                <AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-40 text-yellow-500" />
+                <p className="text-base font-medium">No contact inquiries found</p>
+                <p className="text-xs mt-1">Submissions via the QurApp Contact Page will appear here.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/50 bg-muted/40 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                      <th className="p-4 font-semibold">Sender Details</th>
+                      <th className="p-4 font-semibold">Subject</th>
+                      <th className="p-4 font-semibold">Message Preview</th>
+                      <th className="p-4 font-semibold">Status</th>
+                      <th className="p-4 font-semibold">Date Submitted</th>
+                      <th className="p-4 text-right font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50 text-sm">
+                    {inquiries.map((item) => (
+                      <tr key={item.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="p-4">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-foreground">{item.name}</span>
+                            <span className="text-xs text-muted-foreground">{item.email}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 font-medium text-foreground max-w-[150px] truncate">{item.subject}</td>
+                        <td className="p-4 text-muted-foreground max-w-[250px] truncate">{item.message}</td>
+                        <td className="p-4">
+                          <Badge
+                            variant="outline"
+                            className={
+                              item.status === "replied"
+                                ? "bg-green-500/10 text-green-500 border-green-500/30 font-semibold"
+                                : item.status === "ignored"
+                                ? "bg-zinc-500/10 text-zinc-500 border-zinc-500/30"
+                                : "bg-amber-500/10 text-amber-500 border-amber-500/30 font-semibold animate-pulse"
+                            }
+                          >
+                            {item.status.toUpperCase()}
+                          </Badge>
+                        </td>
+                        <td className="p-4 text-muted-foreground text-xs">{formatDate(item.createdAt)}</td>
+                        <td className="p-4 text-right space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedInquiry(item);
+                              setReplyText("");
+                            }}
+                          >
+                            View & Reply
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500 hover:text-red-600 hover:bg-red-500/10 h-8 w-8"
+                            onClick={() => handleDeleteInquiry(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Detail & Reply Modal */}
+      {selectedInquiry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="border-b border-border/60 p-5 flex justify-between items-center bg-muted/20">
+              <div>
+                <h3 className="text-lg font-bold text-foreground font-display">Contact Inquiry Details</h3>
+                <p className="text-xs text-muted-foreground">ID: {selectedInquiry.id}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full"
+                onClick={() => setSelectedInquiry(null)}
+              >
+                ✕
+              </Button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4 text-sm bg-muted/40 p-4 rounded-lg border">
+                <div>
+                  <span className="block text-xs font-mono uppercase text-muted-foreground">Sender Name</span>
+                  <span className="font-semibold text-foreground">{selectedInquiry.name}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-mono uppercase text-muted-foreground">Sender Email</span>
+                  <span className="font-semibold text-foreground">{selectedInquiry.email}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="block text-xs font-mono uppercase text-muted-foreground">Subject</span>
+                  <span className="font-semibold text-foreground">{selectedInquiry.subject}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-mono uppercase text-muted-foreground">Submitted Date</span>
+                  <span className="text-foreground">{formatDate(selectedInquiry.createdAt)}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-mono uppercase text-muted-foreground">Current Status</span>
+                  <Badge
+                    variant="outline"
+                    className={
+                      selectedInquiry.status === "replied"
+                        ? "bg-green-500/10 text-green-500 border-green-500/30"
+                        : "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                    }
+                  >
+                    {selectedInquiry.status.toUpperCase()}
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <span className="block text-xs font-mono uppercase text-muted-foreground mb-1.5">User Message</span>
+                <div className="bg-card border p-4 rounded-lg text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                  {selectedInquiry.message}
+                </div>
+              </div>
+
+              {selectedInquiry.status === "replied" && (
+                <div className="border-t pt-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="block text-xs font-mono uppercase text-green-500 font-semibold">Sent Reply</span>
+                    <span className="text-xs text-muted-foreground">
+                      Sent on: {selectedInquiry.repliedAt ? formatDate(selectedInquiry.repliedAt) : ""}
+                    </span>
+                  </div>
+                  <div className="bg-green-500/5 border border-green-500/10 p-4 rounded-lg text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                    {selectedInquiry.replyMessage}
+                  </div>
+                </div>
+              )}
+
+              {selectedInquiry.status !== "replied" && (
+                <div className="border-t pt-4 space-y-3">
+                  <label htmlFor="replyText" className="block text-xs font-mono uppercase text-primary font-semibold">
+                    Compose Email Reply
+                  </label>
+                  <textarea
+                    id="replyText"
+                    rows={6}
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Type your response to the user here. Clicking send will dispatch this message directly via the Resend API..."
+                    className="w-full text-sm bg-card border border-border rounded-lg p-3 text-foreground focus:ring-2 focus:ring-primary/50 focus:outline-none placeholder-muted-foreground font-sans leading-relaxed"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedInquiry(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      disabled={!replyText.trim() || sendingReplyId !== null}
+                      onClick={() => handleReplyInquiry(selectedInquiry.id)}
+                      className="gap-2"
+                    >
+                      {sendingReplyId !== null ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="h-4 w-4" />
+                          Send Reply
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "donations" && (
+        <div className="space-y-4">
+          <div className="bg-card rounded-xl border border-border/50 overflow-hidden">
+            {donationsLoading ? (
+              <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
+                <p className="text-sm">Loading donations history...</p>
+              </div>
+            ) : donations.length === 0 ? (
+              <div className="p-12 text-center text-muted-foreground">
+                <Heart className="h-12 w-12 mx-auto mb-3 opacity-40 text-amber-500" />
+                <p className="text-base font-medium">No donation transactions found</p>
+                <p className="text-xs mt-1">Completed Paystack payments or Kuda Bank transfer receipt reports will show here.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/50 bg-muted/40 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                      <th className="p-4 font-semibold">Donor Details</th>
+                      <th className="p-4 font-semibold">Amount & Currency</th>
+                      <th className="p-4 font-semibold">Payment Method</th>
+                      <th className="p-4 font-semibold">Reference</th>
+                      <th className="p-4 font-semibold">Status</th>
+                      <th className="p-4 font-semibold">Date</th>
+                      <th className="p-4 text-right font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50 text-sm">
+                    {donations.map((item) => (
+                      <tr key={item.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="p-4 font-medium text-foreground">
+                          <div className="flex flex-col">
+                            <span>{item.name || "Anonymous Donor"}</span>
+                            <span className="text-xs text-muted-foreground">{item.email || "No Email"}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 font-bold text-foreground">
+                          {item.currency === "NGN" ? "₦" : "$"}
+                          {item.amount.toLocaleString()}
+                        </td>
+                        <td className="p-4 capitalize text-muted-foreground">
+                          {item.paymentMethod.replace("_", " ")}
+                        </td>
+                        <td className="p-4 font-mono text-xs text-muted-foreground">{item.reference || "N/A"}</td>
+                        <td className="p-4">
+                          <Badge
+                            variant="outline"
+                            className={
+                              item.status === "success"
+                                ? "bg-green-500/10 text-green-500 border-green-500/30 font-semibold"
+                                : item.status === "failed"
+                                ? "bg-red-500/10 text-red-500 border-red-500/30"
+                                : "bg-amber-500/10 text-amber-500 border-amber-500/30 font-semibold animate-pulse"
+                            }
+                          >
+                            {item.status.toUpperCase()}
+                          </Badge>
+                        </td>
+                        <td className="p-4 text-muted-foreground text-xs">{formatDate(item.createdAt)}</td>
+                        <td className="p-4 text-right space-x-2">
+                          {item.status === "pending" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={approvingDonationId === item.id}
+                              className="bg-green-600/10 text-green-500 border-green-500/30 hover:bg-green-600 hover:text-white"
+                              onClick={() => handleApproveDonation(item.id)}
+                            >
+                              {approvingDonationId === item.id ? "Approving..." : "Approve"}
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500 hover:text-red-600 hover:bg-red-500/10 h-8 w-8"
+                            onClick={() => handleDeleteDonation(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
