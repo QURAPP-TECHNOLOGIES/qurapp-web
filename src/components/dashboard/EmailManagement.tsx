@@ -13,8 +13,7 @@ import {
   Copy,
   Check,
   ExternalLink,
-  MessageSquare,
-  Heart
+  MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,24 +41,12 @@ type ContactInquiry = {
   createdAt: string;
 };
 
-type DonationRecord = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  amount: number;
-  currency: string;
-  paymentMethod: string;
-  reference: string | null;
-  status: string;
-  createdAt: string;
-};
-
 export function EmailManagement() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"list" | "inquiries" | "email-templates" | "sms-templates" | "donations">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "inquiries" | "email-templates" | "sms-templates">("list");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const [inquiries, setInquiries] = useState<ContactInquiry[]>([]);
@@ -67,10 +54,6 @@ export function EmailManagement() {
   const [selectedInquiry, setSelectedInquiry] = useState<ContactInquiry | null>(null);
   const [replyText, setReplyText] = useState("");
   const [sendingReplyId, setSendingReplyId] = useState<string | null>(null);
-
-  const [donations, setDonations] = useState<DonationRecord[]>([]);
-  const [donationsLoading, setDonationsLoading] = useState(false);
-  const [approvingDonationId, setApprovingDonationId] = useState<string | null>(null);
 
   const { toast } = useToast();
   const apiGatewayUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -119,92 +102,13 @@ export function EmailManagement() {
     }
   }, [apiGatewayUrl, toast]);
 
-  const fetchDonations = useCallback(async () => {
-    setDonationsLoading(true);
-    try {
-      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/donations`);
-      if (res.ok) {
-        const data: DonationRecord[] = await res.json();
-        setDonations(data);
-      } else {
-        throw new Error("Failed to fetch donation records.");
-      }
-    } catch (error: any) {
-      console.error("Error fetching donations:", error);
-      toast({
-        title: "Error Loading Donations",
-        description: error?.message || String(error),
-        variant: "destructive",
-      });
-    } finally {
-      setDonationsLoading(false);
-    }
-  }, [apiGatewayUrl, toast]);
-
   useEffect(() => {
     if (activeTab === "list") {
       fetchSubscribers();
     } else if (activeTab === "inquiries") {
       fetchInquiries();
-    } else if (activeTab === "donations") {
-      fetchDonations();
     }
-  }, [activeTab, fetchSubscribers, fetchInquiries, fetchDonations]);
-
-  const handleApproveDonation = async (id: string) => {
-    setApprovingDonationId(id);
-    try {
-      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/donations/${id}/approve`, {
-        method: "POST"
-      });
-
-      if (res.ok) {
-        const result = await res.json();
-        toast({
-          title: "Donation Approved",
-          description: "Transaction status updated to SUCCESS.",
-        });
-        setDonations((prev) =>
-          prev.map((item) => (item.id === id ? result.data : item))
-        );
-      } else {
-        throw new Error("Failed to approve donation transaction.");
-      }
-    } catch (error: any) {
-      toast({
-        title: "Approval Failed",
-        description: error?.message || String(error),
-        variant: "destructive",
-      });
-    } finally {
-      setApprovingDonationId(null);
-    }
-  };
-
-  const handleDeleteDonation = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this donation record?")) return;
-    try {
-      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/donations/${id}`, {
-        method: "DELETE"
-      });
-
-      if (res.ok) {
-        setDonations((prev) => prev.filter((item) => item.id !== id));
-        toast({
-          title: "Record Deleted",
-          description: "Donation transaction record removed.",
-        });
-      } else {
-        throw new Error("Failed to delete donation record.");
-      }
-    } catch (error: any) {
-      toast({
-        title: "Delete Failed",
-        description: error?.message || String(error),
-        variant: "destructive",
-      });
-    }
-  };
+  }, [activeTab, fetchSubscribers, fetchInquiries]);
 
   const handleReplyInquiry = async (id: string) => {
     if (!replyText.trim()) return;
@@ -584,17 +488,6 @@ export function EmailManagement() {
         >
           <MessageSquare className="h-4 w-4" />
           Contact Inquiries
-        </button>
-        <button
-          onClick={() => setActiveTab("donations")}
-          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${
-            activeTab === "donations"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Heart className="h-4 w-4" />
-          Donation History
         </button>
         <button
           onClick={() => setActiveTab("email-templates")}
@@ -1030,97 +923,6 @@ export function EmailManagement() {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === "donations" && (
-        <div className="space-y-4">
-          <div className="bg-card rounded-xl border border-border/50 overflow-hidden">
-            {donationsLoading ? (
-              <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-                <p className="text-sm">Loading donations history...</p>
-              </div>
-            ) : donations.length === 0 ? (
-              <div className="p-12 text-center text-muted-foreground">
-                <Heart className="h-12 w-12 mx-auto mb-3 opacity-40 text-amber-500" />
-                <p className="text-base font-medium">No donation transactions found</p>
-                <p className="text-xs mt-1">Completed Paystack payments or Kuda Bank transfer receipt reports will show here.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-border/50 bg-muted/40 text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                      <th className="p-4 font-semibold">Donor Details</th>
-                      <th className="p-4 font-semibold">Amount & Currency</th>
-                      <th className="p-4 font-semibold">Payment Method</th>
-                      <th className="p-4 font-semibold">Reference</th>
-                      <th className="p-4 font-semibold">Status</th>
-                      <th className="p-4 font-semibold">Date</th>
-                      <th className="p-4 text-right font-semibold">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/50 text-sm">
-                    {donations.map((item) => (
-                      <tr key={item.id} className="hover:bg-muted/20 transition-colors">
-                        <td className="p-4 font-medium text-foreground">
-                          <div className="flex flex-col">
-                            <span>{item.name || "Anonymous Donor"}</span>
-                            <span className="text-xs text-muted-foreground">{item.email || "No Email"}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 font-bold text-foreground">
-                          {item.currency === "NGN" ? "₦" : "$"}
-                          {item.amount.toLocaleString()}
-                        </td>
-                        <td className="p-4 capitalize text-muted-foreground">
-                          {item.paymentMethod.replace("_", " ")}
-                        </td>
-                        <td className="p-4 font-mono text-xs text-muted-foreground">{item.reference || "N/A"}</td>
-                        <td className="p-4">
-                          <Badge
-                            variant="outline"
-                            className={
-                              item.status === "success"
-                                ? "bg-green-500/10 text-green-500 border-green-500/30 font-semibold"
-                                : item.status === "failed"
-                                ? "bg-red-500/10 text-red-500 border-red-500/30"
-                                : "bg-amber-500/10 text-amber-500 border-amber-500/30 font-semibold animate-pulse"
-                            }
-                          >
-                            {item.status.toUpperCase()}
-                          </Badge>
-                        </td>
-                        <td className="p-4 text-muted-foreground text-xs">{formatDate(item.createdAt)}</td>
-                        <td className="p-4 text-right space-x-2">
-                          {item.status === "pending" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={approvingDonationId === item.id}
-                              className="bg-green-600/10 text-green-500 border-green-500/30 hover:bg-green-600 hover:text-white"
-                              onClick={() => handleApproveDonation(item.id)}
-                            >
-                              {approvingDonationId === item.id ? "Approving..." : "Approve"}
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-500 hover:text-red-600 hover:bg-red-500/10 h-8 w-8"
-                            onClick={() => handleDeleteDonation(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         </div>
       )}

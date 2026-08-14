@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   Users, BookOpen, MessageSquare, Trophy,
   Bell, Search, Settings, Menu,
-  Calendar, Download, Filter, Mail, Send, Database, Image, Music
+  Calendar, Download, Filter, Mail, Send, Database, Image, Music, Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ import { GalleryList } from "@/components/dashboard/GalleryList";
 import { HisnulMuslimAudio } from "@/components/dashboard/HisnulMuslimAudio";
 import { HisnulMuslimConfig } from "@/components/dashboard/HisnulMuslimConfig";
 import { HisnulMuslimFeedback } from "@/components/dashboard/HisnulMuslimFeedback";
+import { DonationManagement } from "@/components/dashboard/DonationManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSEO } from "@/hooks/useSEO";
 import logo from "@/assets/logo.png";
@@ -87,6 +88,7 @@ export default function Dashboard() {
     { label: "Users", icon: Users, id: "users" },
     { label: "Emails", icon: Mail, id: "emails" },
     { label: "Notifications", icon: Send, id: "notifications" },
+    { label: "Donations", icon: Heart, id: "donations" },
     { label: "Content", icon: BookOpen, id: "content" },
     { label: "Analytics", icon: Trophy, id: "analytics" },
     { label: "Settings", icon: Settings, id: "settings" },
@@ -282,6 +284,16 @@ export default function Dashboard() {
               transition={{ duration: 0.5 }}
             >
               <NotificationManagement />
+            </motion.div>
+          )}
+
+          {activeTab === "donations" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <DonationManagement />
             </motion.div>
           )}
 
