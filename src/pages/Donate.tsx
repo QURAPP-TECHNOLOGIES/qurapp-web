@@ -254,14 +254,18 @@ const Donate = () => {
             handleSavePaystackDonation(response.reference);
           },
           onClose: function() {
+            // Re-open our dialog modal so user can retry or adjust choices
+            setIsModalOpen(true);
             toast({
-              title: "Transaction Closed",
-              description: "Payment was not completed."
+              title: "Transaction Cancelled",
+              description: "Payment checkout was not completed."
             });
           }
         });
 
         if (handler && typeof handler.openIframe === 'function') {
+          // Temporarily close Shadcn Dialog to release pointer-events & scroll locks
+          setIsModalOpen(false);
           handler.openIframe();
         } else {
           throw new Error("Paystack setup returned an invalid handler instance.");
