@@ -579,9 +579,9 @@ const Donate = () => {
                  </div>
               </CardHeader>
 
-              <CardContent className="p-8 space-y-8">
+              <CardContent className="p-6 sm:p-8 space-y-8">
                 {/* Amount Selectors */}
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 min-[380px]:grid-cols-3 sm:grid-cols-5 gap-2.5">
                   {activeAmounts.map((amt) => (
                     <button
                       key={amt}
@@ -589,7 +589,7 @@ const Donate = () => {
                         setSelectedAmount(amt);
                         setCustomAmount("");
                       }}
-                      className={`py-3.5 px-4 rounded-xl font-bold font-display text-base sm:text-lg border transition-all ${selectedAmount === amt && !customAmount
+                      className={`py-3 px-2 rounded-xl font-bold font-display text-sm sm:text-base border transition-all ${selectedAmount === amt && !customAmount
                         ? "border-amber-500 bg-amber-500/10 text-amber-500 shadow-sm"
                         : "border-border/60 hover:border-amber-500/40 text-foreground bg-background"
                         }`}
@@ -629,12 +629,14 @@ const Donate = () => {
                       setCryptoRef("");
                       setIsModalOpen(true);
                     }}
-                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-10 text-base shadow-xl shadow-amber-500/20 gap-2"
+                    className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 sm:px-10 text-sm sm:text-base shadow-xl shadow-amber-500/20 gap-2 justify-center"
                   >
-                    <Heart className="w-5 h-5 fill-slate-950" />
-                    {frequency === "monthly"
-                      ? `Donate ${currencySymbol}${currentAmount.toLocaleString()} / month`
-                      : `Donate ${currencySymbol}${currentAmount.toLocaleString()} Once`}
+                    <Heart className="w-5 h-5 fill-slate-950 shrink-0" />
+                    <span className="truncate">
+                      {frequency === "monthly"
+                        ? `Donate ${currencySymbol}${currentAmount.toLocaleString()} / month`
+                        : `Donate ${currencySymbol}${currentAmount.toLocaleString()} Once`}
+                    </span>
                   </Button>
                 </div>
               </CardContent>

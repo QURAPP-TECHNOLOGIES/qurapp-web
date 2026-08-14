@@ -3,8 +3,7 @@ import Footer from "@/components/Footer";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Volume2, Bot, ArrowRight, Download, Sparkles, CheckCircle2, Globe, Shield } from "lucide-react";
+import { BookOpen, Volume2, Bot, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 
 const Products = () => {
@@ -76,9 +75,10 @@ const Products = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-4 pt-2">
-                  <Button asChild size="lg" className="gap-2">
-                    <Link to="/products/qurapp">
-                      Preview QurApp Roadmap <ArrowRight className="w-4 h-4" />
+                  <Button asChild size="lg" className="w-full sm:w-auto gap-2 justify-center">
+                    <Link to="/products/qurapp" className="flex items-center justify-center gap-2">
+                      <span className="truncate">Preview QurApp Roadmap</span>
+                      <ArrowRight className="w-4 h-4 shrink-0" />
                     </Link>
                   </Button>
                 </div>
@@ -135,9 +135,10 @@ const Products = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-4 pt-2">
-                  <Button asChild size="lg" variant="outline" className="gap-2 border-blue-500/30 text-blue-500 hover:bg-blue-500/10">
-                    <Link to="/products/hisnul-muslim">
-                      View App Details <ArrowRight className="w-4 h-4" />
+                  <Button asChild size="lg" variant="outline" className="w-full sm:w-auto gap-2 justify-center border-blue-500/30 text-blue-500 hover:bg-blue-500/10">
+                    <Link to="/products/hisnul-muslim" className="flex items-center justify-center gap-2">
+                      <span className="truncate">View App Details</span>
+                      <ArrowRight className="w-4 h-4 shrink-0" />
                     </Link>
                   </Button>
                 </div>
@@ -194,9 +195,10 @@ const Products = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-4 pt-2">
-                  <Button asChild size="lg" variant="outline" className="gap-2 border-purple-500/30 text-purple-500 hover:bg-purple-500/10">
-                    <Link to="/products/qurai">
-                      View AI Preview <ArrowRight className="w-4 h-4" />
+                  <Button asChild size="lg" variant="outline" className="w-full sm:w-auto gap-2 justify-center border-purple-500/30 text-purple-500 hover:bg-purple-500/10">
+                    <Link to="/products/qurai" className="flex items-center justify-center gap-2">
+                      <span className="truncate">View AI Preview</span>
+                      <ArrowRight className="w-4 h-4 shrink-0" />
                     </Link>
                   </Button>
                 </div>

@@ -35,6 +35,9 @@ const Header = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const shouldShowWaitlist = location.pathname === '/products/qurapp' || location.pathname === '/products/qurai';
+  const waitlistHref = location.pathname === '/products/qurai' ? '#waitlist' : '#download';
+
   const getBrandInfo = () => {
     if (location.pathname.includes('/hisnul-muslim')) {
       return { title: "Hisnul Muslim", subtitle: "By QurApp", logoImg: logoHsn };
@@ -171,11 +174,13 @@ const Header = () => {
               </Link>
             </Button>
 
-            <Button asChild size="sm" className="gap-1.5 shadow-sm">
-              <a href="/#download">
-                <Sparkles className="w-3.5 h-3.5" /> Join Waitlist
-              </a>
-            </Button>
+            {shouldShowWaitlist && (
+              <Button asChild size="sm" className="gap-1.5 shadow-sm">
+                <a href={waitlistHref}>
+                  <Sparkles className="w-3.5 h-3.5" /> Join Waitlist
+                </a>
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -270,11 +275,13 @@ const Header = () => {
                   <Heart className="w-4 h-4 mr-2 fill-amber-500/20" /> Support Our Mission
                 </Link>
               </Button>
-              <Button asChild size="default" className="w-full justify-center">
-                <a href="/#download" onClick={() => setIsMenuOpen(false)}>
-                  Join Waitlist
-                </a>
-              </Button>
+              {shouldShowWaitlist && (
+                <Button asChild size="default" className="w-full justify-center">
+                  <a href={waitlistHref} onClick={() => setIsMenuOpen(false)}>
+                    Join Waitlist
+                  </a>
+                </Button>
+              )}
             </div>
           </div>
         </div>

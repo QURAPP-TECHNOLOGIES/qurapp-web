@@ -113,12 +113,12 @@ const DownloadSection = () => {
           </p>
 
           {/* Subscription Type Toggle Tabs */}
-          <div className="flex justify-center mb-6 gap-2 bg-black/30 p-1 rounded-full max-w-[280px] mx-auto border border-white/5 backdrop-blur-sm shadow-inner">
+          <div className="flex justify-center mb-6 gap-2 bg-muted/60 p-1 rounded-full max-w-[280px] mx-auto border border-border shadow-inner">
             <button
               type="button"
               onClick={() => setSubscriptionType("email")}
               className={`flex-1 py-1.5 px-4 rounded-full text-xs font-semibold transition-all ${subscriptionType === "email"
-                  ? "bg-primary text-black shadow-md font-bold"
+                  ? "bg-primary text-slate-950 shadow-md font-bold"
                   : "text-muted-foreground hover:text-foreground"
                 }`}
             >
@@ -128,7 +128,7 @@ const DownloadSection = () => {
               type="button"
               onClick={() => setSubscriptionType("phone")}
               className={`flex-1 py-1.5 px-4 rounded-full text-xs font-semibold transition-all ${subscriptionType === "phone"
-                  ? "bg-primary text-black shadow-md font-bold"
+                  ? "bg-primary text-slate-950 shadow-md font-bold"
                   : "text-muted-foreground hover:text-foreground"
                 }`}
             >
@@ -144,20 +144,20 @@ const DownloadSection = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="flex-1 w-full px-5 py-3 rounded-full border border-white/10 bg-black/40 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm glass-premium h-[48px]"
+                className="flex-1 w-full px-5 py-3 rounded-full border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm h-[48px] shadow-sm"
               />
             ) : (
-              <div className="flex-1 w-full relative phone-input-dark">
+              <div className="flex-1 w-full relative phone-input-light">
                 <PhoneInput
                   defaultCountry="ng"
                   value={phoneNumber}
                   onChange={(phone) => setPhoneNumber(phone)}
-                  inputClassName="w-full h-[48px] rounded-full border border-white/10 bg-black/40 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm glass-premium"
+                  inputClassName="w-full h-[48px] rounded-full border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
                   className="w-full flex gap-2"
                   countrySelectorStyleProps={{
-                    buttonClassName: "px-3 py-3 rounded-full border border-white/10 bg-black/40 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 glass-premium h-[48px] w-[64px] flex items-center justify-center",
+                    buttonClassName: "px-3 py-3 rounded-full border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 h-[48px] w-[64px] flex items-center justify-center",
                     dropdownStyleProps: {
-                      className: "bg-zinc-950 border border-white/10 text-foreground rounded-lg shadow-xl",
+                      className: "bg-card border border-border text-foreground rounded-lg shadow-xl",
                     },
                   }}
                 />

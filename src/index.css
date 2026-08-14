@@ -243,3 +243,45 @@
   background-color: rgba(255, 255, 255, 0.1) !important;
   color: white !important;
 }
+
+/* Custom phone input styling for react-international-phone in light mode (theme-based) */
+.phone-input-light .react-international-phone-input-container {
+  width: 100%;
+}
+
+.phone-input-light .react-international-phone-input {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+  font-size: 0.875rem !important;
+  height: inherit !important;
+  border-radius: 0 9999px 9999px 0 !important;
+}
+
+.phone-input-light .react-international-phone-country-selector-button {
+  background-color: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+  height: inherit !important;
+  border-radius: 9999px 0 0 9999px !important;
+  padding-left: 12px !important;
+}
+
+.phone-input-light .react-international-phone-country-selector-dropdown {
+  background-color: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-radius: 8px !important;
+  padding: 4px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.phone-input-light .react-international-phone-country-selector-dropdown-entry {
+  color: hsl(var(--foreground)) !important;
+  border-radius: 4px !important;
+  padding: 6px 8px !important;
+}
+
+.phone-input-light .react-international-phone-country-selector-dropdown-entry:hover {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+}

@@ -103,7 +103,7 @@ const QurAIProduct = () => {
 
       <main className="flex-1 pt-16">
         {/* Banner */}
-        <section className="py-20 border-b border-border/40 bg-gradient-to-b from-purple-500/10 via-background to-background animate-fade-up">
+        <section id="waitlist" className="py-20 border-b border-border/40 bg-gradient-to-b from-purple-500/10 via-background to-background animate-fade-up">
           <div className="container text-center max-w-3xl space-y-6">
             <div className="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center mx-auto shadow-lg shadow-purple-500/10">
               <Bot className="w-8 h-8" />
@@ -154,17 +154,17 @@ const QurAIProduct = () => {
                   required
                 />
               ) : (
-                <div className="flex-1 w-full relative phone-input-dark">
+                <div className="flex-1 w-full relative phone-input-light">
                   <PhoneInput
                     defaultCountry="ng"
                     value={phoneNumber}
                     onChange={(phone) => setPhoneNumber(phone)}
-                    inputClassName="w-full h-[44px] rounded-full border border-white/10 bg-black/40 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm glass-premium"
+                    inputClassName="w-full h-[44px] rounded-full border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm"
                     className="w-full flex gap-2"
                     countrySelectorStyleProps={{
-                      buttonClassName: "px-3 py-3 rounded-full border border-white/10 bg-black/40 text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 glass-premium h-[44px] w-[64px] flex items-center justify-center",
+                      buttonClassName: "px-3 py-3 rounded-full border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 h-[44px] w-[64px] flex items-center justify-center",
                       dropdownStyleProps: {
-                        className: "bg-zinc-950 border border-white/10 text-foreground rounded-lg shadow-xl",
+                        className: "bg-card border border-border text-foreground rounded-lg shadow-xl",
                       },
                     }}
                   />
