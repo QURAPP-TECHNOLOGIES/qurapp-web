@@ -127,7 +127,33 @@ const Donate = () => {
 
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+
+    // Generate a simple session ID if not present in sessionStorage
+    let sessionId = sessionStorage.getItem("donations_session_id");
+    if (!sessionId) {
+      sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem("donations_session_id", sessionId);
+    }
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const utmSource = searchParams.get("utm_source") || searchParams.get("source") || "";
+    const utmMedium = searchParams.get("utm_medium") || searchParams.get("medium") || "";
+    const utmCampaign = searchParams.get("utm_campaign") || searchParams.get("campaign") || "";
+    const utmContent = searchParams.get("utm_content") || searchParams.get("content") || "";
+
+    fetch(`${apiGatewayUrl}/api/v1/donations/events`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventType: "DONATION_PAGE_VIEWED",
+        sessionId,
+        utmSource,
+        utmMedium,
+        utmCampaign,
+        utmContent
+      })
+    }).catch(e => console.error("Failed to log page view event:", e));
+  }, [fetchStats, apiGatewayUrl]);
 
   const handleRegionChange = (regionVal: "international" | "nigeria") => {
     setRegion(regionVal);
@@ -145,6 +171,41 @@ const Donate = () => {
   const currencyCode = region === "nigeria" ? "NGN" : "USD";
   const activeAmounts = region === "nigeria" ? ngnAmounts : usdAmounts;
   const currentAmount = customAmount ? parseFloat(customAmount) || 0 : selectedAmount;
+
+  const emitEvent = useCallback(async (eventType: string, extra: any = {}) => {
+    try {
+      let sessionId = sessionStorage.getItem("donations_session_id");
+      if (!sessionId) {
+        sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        sessionStorage.setItem("donations_session_id", sessionId);
+      }
+
+      const searchParams = new URLSearchParams(window.location.search);
+      const utmSource = searchParams.get("utm_source") || searchParams.get("source") || "";
+      const utmMedium = searchParams.get("utm_medium") || searchParams.get("medium") || "";
+      const utmCampaign = searchParams.get("utm_campaign") || searchParams.get("campaign") || "";
+      const utmContent = searchParams.get("utm_content") || searchParams.get("content") || "";
+
+      await fetch(`${apiGatewayUrl}/api/v1/donations/events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType,
+          sessionId,
+          utmSource,
+          utmMedium,
+          utmCampaign,
+          utmContent,
+          currency: currencyCode,
+          amount: currentAmount,
+          paymentMethod,
+          ...extra
+        })
+      });
+    } catch (e) {
+      console.error(`Failed to log donation event: ${eventType}`, e);
+    }
+  }, [apiGatewayUrl, currencyCode, currentAmount, paymentMethod]);
 
   const loadPaystack = () => {
     return new Promise<boolean>((resolve) => {
@@ -203,7 +264,12 @@ const Donate = () => {
           amount: currentAmount,
           currency: currencyCode,
           paymentMethod: "paystack",
-          reference: reference
+          reference: reference,
+          frequency: frequency,
+          utmSource: new URLSearchParams(window.location.search).get("utm_source") || new URLSearchParams(window.location.search).get("source") || "",
+          utmMedium: new URLSearchParams(window.location.search).get("utm_medium") || new URLSearchParams(window.location.search).get("medium") || "",
+          utmCampaign: new URLSearchParams(window.location.search).get("utm_campaign") || new URLSearchParams(window.location.search).get("campaign") || "",
+          utmContent: new URLSearchParams(window.location.search).get("utm_content") || new URLSearchParams(window.location.search).get("content") || ""
         })
       });
 
@@ -227,6 +293,7 @@ const Donate = () => {
   };
 
   const handleProceedPayment = async () => {
+    emitEvent("DONATION_CHECKOUT_STARTED");
     if (paymentMethod === "paystack") {
       if (!donorEmail) {
         toast({
@@ -281,6 +348,12 @@ const Donate = () => {
           currency: currencyCode,
           plan: planCode,
           metadata: {
+            utm_source: new URLSearchParams(window.location.search).get("utm_source") || new URLSearchParams(window.location.search).get("source") || "",
+            utm_medium: new URLSearchParams(window.location.search).get("utm_medium") || new URLSearchParams(window.location.search).get("medium") || "",
+            utm_campaign: new URLSearchParams(window.location.search).get("utm_campaign") || new URLSearchParams(window.location.search).get("campaign") || "",
+            utm_content: new URLSearchParams(window.location.search).get("utm_content") || new URLSearchParams(window.location.search).get("content") || "",
+            frequency: frequency,
+            donor_name: donorName || "Anonymous Sender",
             custom_fields: [
               {
                 display_name: "Donor Name",
@@ -295,6 +368,7 @@ const Donate = () => {
           },
           onClose: function () {
             if (!isSuccess) {
+              emitEvent("DONATION_PAYMENT_FAILED");
               // Re-open our dialog modal so user can retry or adjust choices
               setIsModalOpen(true);
               toast({
@@ -347,7 +421,12 @@ const Donate = () => {
           amount: currentAmount,
           currency: "NGN",
           paymentMethod: `bank_transfer (${selectedBank.toUpperCase()})`,
-          reference: transferRef || `TRF-${selectedBank.toUpperCase()}-${Date.now()}`
+          reference: transferRef || `TRF-${selectedBank.toUpperCase()}-${Date.now()}`,
+          frequency: frequency,
+          utmSource: new URLSearchParams(window.location.search).get("utm_source") || new URLSearchParams(window.location.search).get("source") || "",
+          utmMedium: new URLSearchParams(window.location.search).get("utm_medium") || new URLSearchParams(window.location.search).get("medium") || "",
+          utmCampaign: new URLSearchParams(window.location.search).get("utm_campaign") || new URLSearchParams(window.location.search).get("campaign") || "",
+          utmContent: new URLSearchParams(window.location.search).get("utm_content") || new URLSearchParams(window.location.search).get("content") || ""
         })
       });
       if (!res.ok) throw new Error("Failed to log transfer receipt.");
@@ -391,7 +470,12 @@ const Donate = () => {
           name: donorName || "Anonymous Sender",
           email: donorEmail,
           amount: currentAmount,
-          currency: currencyCode
+          currency: currencyCode,
+          frequency: frequency,
+          utmSource: new URLSearchParams(window.location.search).get("utm_source") || new URLSearchParams(window.location.search).get("source") || "",
+          utmMedium: new URLSearchParams(window.location.search).get("utm_medium") || new URLSearchParams(window.location.search).get("medium") || "",
+          utmCampaign: new URLSearchParams(window.location.search).get("utm_campaign") || new URLSearchParams(window.location.search).get("campaign") || "",
+          utmContent: new URLSearchParams(window.location.search).get("utm_content") || new URLSearchParams(window.location.search).get("content") || ""
         })
       });
 
@@ -569,7 +653,10 @@ const Donate = () => {
                 <div className="flex justify-center pt-2">
                   <div className="bg-muted/60 p-1.5 rounded-xl flex items-center gap-1.5 border border-border">
                     <button
-                      onClick={() => setFrequency("monthly")}
+                      onClick={() => {
+                        setFrequency("monthly");
+                        emitEvent("DONATION_FREQUENCY_SELECTED", { metadata: { frequency: "monthly" } });
+                      }}
                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${frequency === "monthly"
                         ? "bg-amber-500 text-slate-950 shadow-md"
                         : "text-muted-foreground hover:text-foreground"
@@ -582,7 +669,10 @@ const Donate = () => {
                         }`}>Sustainer 🌙</span>
                     </button>
                     <button
-                      onClick={() => setFrequency("one-time")}
+                      onClick={() => {
+                        setFrequency("one-time");
+                        emitEvent("DONATION_FREQUENCY_SELECTED", { metadata: { frequency: "one-time" } });
+                      }}
                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${frequency === "one-time"
                         ? "bg-amber-500 text-slate-950 shadow-md"
                         : "text-muted-foreground hover:text-foreground"
@@ -608,6 +698,7 @@ const Donate = () => {
                       onClick={() => {
                         setSelectedAmount(amt);
                         setCustomAmount("");
+                        emitEvent("DONATION_AMOUNT_SELECTED", { amount: amt });
                       }}
                       className={`py-3 px-2 rounded-xl font-bold font-display text-sm sm:text-base border transition-all ${selectedAmount === amt && !customAmount
                         ? "border-amber-500 bg-amber-500/10 text-amber-500 shadow-sm"
@@ -632,7 +723,12 @@ const Donate = () => {
                       type="number"
                       placeholder="Custom amount"
                       value={customAmount}
-                      onChange={(e) => setCustomAmount(e.target.value)}
+                      onChange={(e) => {
+                        setCustomAmount(e.target.value);
+                        if (e.target.value) {
+                          emitEvent("DONATION_AMOUNT_SELECTED", { amount: parseFloat(e.target.value) || 0 });
+                        }
+                      }}
                       className="pl-8 text-center font-bold text-lg"
                     />
                   </div>
@@ -812,7 +908,10 @@ const Donate = () => {
                   <label className="text-xs font-semibold text-muted-foreground">Select Payment Method</label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={() => setPaymentMethod("paystack")}
+                      onClick={() => {
+                        setPaymentMethod("paystack");
+                        emitEvent("DONATION_METHOD_SELECTED", { paymentMethod: "paystack" });
+                      }}
                       className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "paystack"
                         ? "border-amber-500 bg-amber-500/10 text-amber-500"
                         : "border-border text-muted-foreground hover:border-foreground"
@@ -824,7 +923,10 @@ const Donate = () => {
 
                     {/* PayPal option commented out for now
                     <button
-                      onClick={() => setPaymentMethod("paypal")}
+                      onClick={() => {
+                        setPaymentMethod("paypal");
+                        emitEvent("DONATION_METHOD_SELECTED", { paymentMethod: "paypal" });
+                      }}
                       className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${
                         paymentMethod === "paypal"
                           ? "border-amber-500 bg-amber-500/10 text-amber-500"
@@ -837,7 +939,10 @@ const Donate = () => {
                     */}
 
                     <button
-                      onClick={() => setPaymentMethod("crypto")}
+                      onClick={() => {
+                        setPaymentMethod("crypto");
+                        emitEvent("DONATION_METHOD_SELECTED", { paymentMethod: "crypto" });
+                      }}
                       className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "crypto"
                         ? "border-amber-500 bg-amber-500/10 text-amber-500"
                         : "border-border text-muted-foreground hover:border-foreground"
@@ -856,7 +961,10 @@ const Donate = () => {
                   <label className="text-xs font-semibold text-muted-foreground">Select Payment Method</label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={() => setPaymentMethod("paystack")}
+                      onClick={() => {
+                        setPaymentMethod("paystack");
+                        emitEvent("DONATION_METHOD_SELECTED", { paymentMethod: "paystack" });
+                      }}
                       className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "paystack"
                         ? "border-emerald-500 bg-emerald-500/10 text-emerald-500"
                         : "border-border text-muted-foreground hover:border-foreground"
@@ -868,7 +976,10 @@ const Donate = () => {
 
                     {/* Flutterwave option commented out for now
                     <button
-                      onClick={() => setPaymentMethod("flutterwave")}
+                      onClick={() => {
+                        setPaymentMethod("flutterwave");
+                        emitEvent("DONATION_METHOD_SELECTED", { paymentMethod: "flutterwave" });
+                      }}
                       className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${
                         paymentMethod === "flutterwave"
                           ? "border-orange-500 bg-orange-500/10 text-orange-500"
@@ -881,7 +992,10 @@ const Donate = () => {
                     */}
 
                     <button
-                      onClick={() => setPaymentMethod("bank_transfer")}
+                      onClick={() => {
+                        setPaymentMethod("bank_transfer");
+                        emitEvent("DONATION_METHOD_SELECTED", { paymentMethod: "bank_transfer" });
+                      }}
                       className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-2 transition-all ${paymentMethod === "bank_transfer"
                         ? "border-blue-500 bg-blue-500/10 text-blue-500"
                         : "border-border text-muted-foreground hover:border-foreground"
