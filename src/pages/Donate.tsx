@@ -33,7 +33,7 @@ interface CampaignStats {
 
 const Donate = () => {
   useSEO({
-    title: "Support Our Mission - QurApp Technologies",
+    title: "Support the QurApp Mission - QurApp Technologies",
     description: "Help us keep QurApp 100% ad-free, secure, and accessible to millions of Muslims worldwide.",
     url: "/donate",
   });
@@ -449,10 +449,13 @@ const Donate = () => {
               Ad-Free & Ethically Funded
             </Badge>
             <h1 className="text-4xl sm:text-6xl font-extrabold font-display tracking-tight text-foreground">
-              Support Our Mission
+              Support the QurApp Mission
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              We believe Quranic learning and daily supplications should never be compromised by advertisements, data tracking, or paywalls. Your generosity keeps the platform free for the entire Ummah.
+              Help us build technology that brings Muslims closer to the Qur’an and authentic Islamic knowledge—free from advertisements, intrusive tracking, and paywalls.
+            </p>
+            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+              Every contribution helps us build, operate, and keep QurApp accessible to Muslims around the world.
             </p>
           </div>
         </section>
@@ -464,10 +467,10 @@ const Donate = () => {
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-bold flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
-                  Annual Operations Campaign (1st Year Launch)
+                  QurApp Operational Sustainability Campaign
                 </CardTitle>
                 <CardDescription>
-                  Help us cover our launch operating infrastructure costs and guarantee a 100% ad-free experience.
+                  Help us fund the cloud infrastructure, API security, and essential operations required to maintain a seamless, high-performance platform.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -490,6 +493,11 @@ const Donate = () => {
                           style={{ width: `${stats?.percentage || 0}%` }}
                         />
                       </div>
+                      <p className="text-xs text-muted-foreground text-center mt-2.5">
+                        {stats?.donorCount && stats.donorCount > 0 
+                          ? `${stats.donorCount} supporter${stats.donorCount > 1 ? 's' : ''} have already joined the mission.` 
+                          : "We're just getting started. Every contribution moves us closer."}
+                      </p>
                     </div>
 
                     {/* Stats Rows */}
@@ -528,9 +536,9 @@ const Donate = () => {
             {/* Donation Form & Tiers */}
             <Card className="border-amber-500/30 bg-card shadow-2xl overflow-hidden">
               <CardHeader className="bg-muted/30 border-b border-border/60 text-center pb-8 space-y-4">
-                <CardTitle className="text-2xl font-bold font-display">Choose Support Amount</CardTitle>
+                <CardTitle className="text-2xl font-bold font-display">Choose Your Contribution</CardTitle>
                 <CardDescription>
-                  Select your location region, frequency, and contribution tier to sustain our servers and AI models.
+                  Your support ensures we stay ad-free, secure, and available for the global Ummah.
                 </CardDescription>
 
                 {/* Region Selector (International vs Nigeria) */}
@@ -580,13 +588,18 @@ const Donate = () => {
                         : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
-                      One-time Contribution
+                      One-time Support
                     </button>
                   </div>
                 </div>
               </CardHeader>
 
               <CardContent className="p-6 sm:p-8 space-y-8">
+                {frequency === "monthly" && (
+                  <p className="text-xs text-amber-500/80 text-center font-medium bg-amber-500/5 py-2.5 px-4 rounded-xl border border-amber-500/10 max-w-sm mx-auto">
+                    Become a monthly Sustainer to help us cover recurring infrastructure costs and keep QurApp free for everyone.
+                  </p>
+                )}
                 {/* Amount Selectors */}
                 <div className="grid grid-cols-2 min-[380px]:grid-cols-3 sm:grid-cols-5 gap-2.5">
                   {activeAmounts.map((amt) => (
@@ -654,10 +667,10 @@ const Donate = () => {
               <CardHeader className="bg-muted/10 border-b border-border/40 pb-5">
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <Cpu className="w-5 h-5 text-primary animate-pulse" />
-                  Monthly Operational Cost Breakdown (50,000 MAU MVP)
+                  Where Your Support Goes
                 </CardTitle>
                 <CardDescription>
-                  100% of your contributions go directly toward running our cloud and verification infrastructure.
+                  Your contributions help fund the infrastructure and essential services required to operate QurApp.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6 space-y-5">
@@ -666,8 +679,8 @@ const Donate = () => {
                     <div className="flex items-center gap-2.5">
                       <div className="w-3.5 h-3.5 rounded-full bg-amber-500" />
                       <div>
-                        <p className="font-semibold text-foreground">Managed Real-Time Audio Room CDN</p>
-                        <p className="text-[10px] text-muted-foreground">High-performance streams, scholar panels, and khatmah sync</p>
+                        <p className="font-semibold text-foreground">🎙️ Real-Time Audio Infrastructure</p>
+                        <p className="text-[10px] text-muted-foreground">Powers QurApp's live Qur'an recitation rooms and Majlis sessions.</p>
                       </div>
                     </div>
                     <span className="font-bold text-foreground">$500/mo</span>
@@ -677,8 +690,8 @@ const Donate = () => {
                     <div className="flex items-center gap-2.5">
                       <div className="w-3.5 h-3.5 rounded-full bg-emerald-600" />
                       <div>
-                        <p className="font-semibold text-foreground">Core Compute Infrastructure</p>
-                        <p className="text-[10px] text-muted-foreground">Databases, routers, notification engines, and API gateway services</p>
+                        <p className="font-semibold text-foreground">⚙️ Core Platform Infrastructure</p>
+                        <p className="text-[10px] text-muted-foreground">Databases, API services, notifications, authentication and platform operations.</p>
                       </div>
                     </div>
                     <span className="font-bold text-foreground">$112/mo</span>
@@ -688,8 +701,8 @@ const Donate = () => {
                     <div className="flex items-center gap-2.5">
                       <div className="w-3.5 h-3.5 rounded-full bg-slate-500" />
                       <div>
-                        <p className="font-semibold text-foreground">Storage, CDNs & Miscellaneous</p>
-                        <p className="text-[10px] text-muted-foreground">S3 file uploads, daily backups, static page hosting assets</p>
+                        <p className="font-semibold text-foreground">☁️ Storage & Supporting Services</p>
+                        <p className="text-[10px] text-muted-foreground">File storage, backups, CDN and other essential services.</p>
                       </div>
                     </div>
                     <span className="font-bold text-foreground">$28/mo</span>
@@ -697,8 +710,8 @@ const Donate = () => {
                 </div>
 
                 <div className="flex justify-between items-center font-bold text-base p-4 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl">
-                  <span>Total Monthly Target Operational Cost:</span>
-                  <span>$640 / Month</span>
+                  <span>Current Monthly Infrastructure Target:</span>
+                  <span>$640</span>
                 </div>
               </CardContent>
             </Card>
@@ -710,9 +723,9 @@ const Donate = () => {
                   <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2">
                     <Cpu className="w-5 h-5" />
                   </div>
-                  <CardTitle className="text-base font-bold">Cloud & AI Infrastructure</CardTitle>
+                  <CardTitle className="text-base font-bold">QurApp Infrastructure</CardTitle>
                   <CardDescription className="text-xs">
-                    Powering real-time audio rooms, streaming audio CDNs, and vector database GPU clusters.
+                    Powering live recitation rooms, APIs, databases, AI services, and the technology behind the platform.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -724,7 +737,7 @@ const Donate = () => {
                   </div>
                   <CardTitle className="text-base font-bold">Scholar Verification</CardTitle>
                   <CardDescription className="text-xs">
-                    Supporting our board of verified Islamic scholars who review content and AI guardrails.
+                    Supporting a trusted environment for learning from verified scholars.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -734,9 +747,9 @@ const Donate = () => {
                   <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center mb-2">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
-                  <CardTitle className="text-base font-bold">100% Ad-Free Guarantee</CardTitle>
+                  <CardTitle className="text-base font-bold">100% Ad-Free</CardTitle>
                   <CardDescription className="text-xs">
-                    No third-party ad networks, tracking pixels, or data sales will ever be introduced.
+                    No third-party advertising, intrusive tracking, or advertising networks will be introduced into the QurApp experience.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -750,10 +763,10 @@ const Donate = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-xl font-bold">
                 <Heart className="w-5 h-5 text-amber-500 fill-amber-500" />
-                Complete Your Contribution
+                Support the QurApp Mission
               </DialogTitle>
               <DialogDescription>
-                Select your payment gateway for <strong>{currencySymbol}{currentAmount.toLocaleString()} {currencyCode}</strong> ({frequency}).
+                You're supporting QurApp with <strong>{currencySymbol}{currentAmount.toLocaleString()} {currencyCode}</strong>.
               </DialogDescription>
             </DialogHeader>
 
@@ -918,7 +931,7 @@ const Donate = () => {
                       You will be redirected to the secure **NOWPayments** checkout window, where you can choose to pay in **Bitcoin (BTC)**, **Ethereum (ETH)**, **USDT**, or any of their 100+ supported cryptocurrencies.
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      🔒 Payments are securely tokenized and monitored in real-time.
+                      🔒 Secure crypto payment powered by NOWPayments.
                     </p>
                   </div>
                 )}
