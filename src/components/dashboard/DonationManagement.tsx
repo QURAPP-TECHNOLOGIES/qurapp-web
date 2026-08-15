@@ -209,8 +209,8 @@ export function DonationManagement() {
         <button
           onClick={() => setActiveTab("transactions")}
           className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 -mb-[2px] ${activeTab === "transactions"
-              ? "border-amber-500 text-amber-500"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+            ? "border-amber-500 text-amber-500"
+            : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
         >
           Transactions Log
@@ -218,8 +218,8 @@ export function DonationManagement() {
         <button
           onClick={() => setActiveTab("analytics")}
           className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 -mb-[2px] ${activeTab === "analytics"
-              ? "border-amber-500 text-amber-500"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+            ? "border-amber-500 text-amber-500"
+            : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
         >
           Analytics Dashboard
