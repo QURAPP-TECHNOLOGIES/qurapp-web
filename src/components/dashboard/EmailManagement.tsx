@@ -53,6 +53,17 @@ export function EmailManagement() {
   const [inquiriesLoading, setInquiriesLoading] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<ContactInquiry | null>(null);
   const [replyText, setReplyText] = useState("");
+
+  const getReplies = (inquiry: ContactInquiry | null) => {
+    if (!inquiry || !inquiry.replyMessage) return [];
+    try {
+      const parsed = JSON.parse(inquiry.replyMessage);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {}
+    return [{ text: inquiry.replyMessage, repliedAt: inquiry.repliedAt }];
+  };
   const [sendingReplyId, setSendingReplyId] = useState<string | null>(null);
 
   const { toast } = useToast();
@@ -131,7 +142,7 @@ export function EmailManagement() {
         setInquiries((prev) =>
           prev.map((item) => (item.id === id ? result.data : item))
         );
-        setSelectedInquiry(null);
+        setSelectedInquiry(result.data);
         setReplyText("");
       } else {
         const errData = await res.json();
@@ -469,44 +480,40 @@ export function EmailManagement() {
       <div className="flex border-b border-border/50">
         <button
           onClick={() => setActiveTab("list")}
-          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${
-            activeTab === "list"
+          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${activeTab === "list"
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
+            }`}
         >
           <Mail className="h-4 w-4" />
           Subscribers List
         </button>
         <button
           onClick={() => setActiveTab("inquiries")}
-          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${
-            activeTab === "inquiries"
+          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${activeTab === "inquiries"
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
+            }`}
         >
           <MessageSquare className="h-4 w-4" />
           Contact Inquiries
         </button>
         <button
           onClick={() => setActiveTab("email-templates")}
-          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${
-            activeTab === "email-templates"
+          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${activeTab === "email-templates"
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
+            }`}
         >
           <FileText className="h-4 w-4" />
           Email Templates
         </button>
         <button
           onClick={() => setActiveTab("sms-templates")}
-          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${
-            activeTab === "sms-templates"
+          className={`px-4 py-2 border-b-2 text-sm font-semibold transition-colors flex items-center gap-2 ${activeTab === "sms-templates"
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
+            }`}
         >
           <Phone className="h-4 w-4" />
           SMS/Phone Templates
@@ -664,7 +671,7 @@ export function EmailManagement() {
 
               <div className="text-xs space-y-1.5 bg-muted/40 p-3 rounded-lg border">
                 <div><span className="font-semibold text-muted-foreground uppercase text-[10px]">Subject:</span> <span className="text-foreground">{tmpl.subject}</span></div>
-                <div><span className="font-semibold text-muted-foreground uppercase text-[10px]">From:</span> <span className="text-foreground">QurApp &lt;welcome@qurapp.com&gt;</span></div>
+                <div><span className="font-semibold text-muted-foreground uppercase text-[10px]">From:</span> <span className="text-foreground">QurApp &lt;updates@qurapp.com&gt;</span></div>
               </div>
 
               {/* Collapsible/Boxed Code Preview */}
@@ -769,8 +776,8 @@ export function EmailManagement() {
                               item.status === "replied"
                                 ? "bg-green-500/10 text-green-500 border-green-500/30 font-semibold"
                                 : item.status === "ignored"
-                                ? "bg-zinc-500/10 text-zinc-500 border-zinc-500/30"
-                                : "bg-amber-500/10 text-amber-500 border-amber-500/30 font-semibold animate-pulse"
+                                  ? "bg-zinc-500/10 text-zinc-500 border-zinc-500/30"
+                                  : "bg-amber-500/10 text-amber-500 border-amber-500/30 font-semibold animate-pulse"
                             }
                           >
                             {item.status.toUpperCase()}
@@ -868,60 +875,68 @@ export function EmailManagement() {
                 </div>
               </div>
 
-              {selectedInquiry.status === "replied" && (
+              {/* Sent replies history */}
+              {getReplies(selectedInquiry).length > 0 && (
                 <div className="border-t pt-4 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="block text-xs font-mono uppercase text-green-500 font-semibold">Sent Reply</span>
-                    <span className="text-xs text-muted-foreground">
-                      Sent on: {selectedInquiry.repliedAt ? formatDate(selectedInquiry.repliedAt) : ""}
-                    </span>
-                  </div>
-                  <div className="bg-green-500/5 border border-green-500/10 p-4 rounded-lg text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                    {selectedInquiry.replyMessage}
+                  <span className="block text-xs font-mono uppercase text-green-500 font-semibold">
+                    Sent Replies ({getReplies(selectedInquiry).length})
+                  </span>
+                  <div className="space-y-3 max-h-[30vh] overflow-y-auto pr-1">
+                    {getReplies(selectedInquiry).map((reply: any, idx: number) => (
+                      <div key={idx} className="bg-green-500/5 border border-green-500/10 p-3.5 rounded-lg text-sm text-foreground whitespace-pre-wrap leading-relaxed relative">
+                        <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-1">
+                          <span className="font-semibold text-green-600/80">Reply #{idx + 1}</span>
+                          <span>{reply.repliedAt ? formatDate(reply.repliedAt) : ""}</span>
+                        </div>
+                        <div>{reply.text}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {selectedInquiry.status !== "replied" && (
-                <div className="border-t pt-4 space-y-3">
-                  <label htmlFor="replyText" className="block text-xs font-mono uppercase text-primary font-semibold">
-                    Compose Email Reply
-                  </label>
-                  <textarea
-                    id="replyText"
-                    rows={6}
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Type your response to the user here. Clicking send will dispatch this message directly via the Resend API..."
-                    className="w-full text-sm bg-card border border-border rounded-lg p-3 text-foreground focus:ring-2 focus:ring-primary/50 focus:outline-none placeholder-muted-foreground font-sans leading-relaxed"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setSelectedInquiry(null)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      disabled={!replyText.trim() || sendingReplyId !== null}
-                      onClick={() => handleReplyInquiry(selectedInquiry.id)}
-                      className="gap-2"
-                    >
-                      {sendingReplyId !== null ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Mail className="h-4 w-4" />
-                          Send Reply
-                        </>
-                      )}
-                    </Button>
-                  </div>
+              {/* Compose Editor - Always Available */}
+              <div className="border-t pt-4 space-y-3">
+                <label htmlFor="replyText" className="block text-xs font-mono uppercase text-primary font-semibold">
+                  Compose Email Reply {getReplies(selectedInquiry).length > 0 && "(Follow-up)"}
+                </label>
+                <p className="text-[10px] text-muted-foreground">
+                  Sending a reply will automatically email the user and CC <strong>support@qurapp.com</strong>.
+                </p>
+                <textarea
+                  id="replyText"
+                  rows={4}
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Type your response to the user here. Clicking send will dispatch this message directly via the Resend API..."
+                  className="w-full text-sm bg-card border border-border rounded-lg p-3 text-foreground focus:ring-2 focus:ring-primary/50 focus:outline-none placeholder-muted-foreground font-sans leading-relaxed"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedInquiry(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={!replyText.trim() || sendingReplyId !== null}
+                    onClick={() => handleReplyInquiry(selectedInquiry.id)}
+                    className="gap-2"
+                  >
+                    {sendingReplyId !== null ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="h-4 w-4" />
+                        Send Reply
+                      </>
+                    )}
+                  </Button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>

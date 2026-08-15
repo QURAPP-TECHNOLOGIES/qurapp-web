@@ -421,7 +421,7 @@ export const ja: typeof en = {
     title: "Hisnul Muslim",
     subtitle: "Fortress of the Muslim",
     badge: "Standalone Mobile App",
-    description: "A beautiful, local-first supplications app based on the authentic Hisnul Muslim book. Built with Flutter, fully offline-first, and designed to help you stay consistent with your daily remembrance.",
+    description: "A beautiful, local-first supplications app based on the authentic Hisnul Muslim book. fully offline-first, and designed to help you stay consistent with your daily remembrance.",
     downloadApk: "Download APK (Direct)",
     googlePlay: "Get it on Google Play",
     appStore: "Download on the App Store",
