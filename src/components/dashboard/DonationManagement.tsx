@@ -181,6 +181,7 @@ export function DonationManagement() {
     const matchesMethod =
       methodFilter === "all" ||
       (methodFilter === "paystack" && item.paymentMethod === "paystack") ||
+      (methodFilter === "nowpayments" && item.paymentMethod === "nowpayments") ||
       (methodFilter === "bank_transfer" && item.paymentMethod.startsWith("bank_transfer"));
 
     return matchesSearch && matchesStatus && matchesMethod;
@@ -296,6 +297,7 @@ export function DonationManagement() {
             >
               <option value="all">All Methods</option>
               <option value="paystack">Paystack</option>
+              <option value="nowpayments">Crypto (NOWPayments)</option>
               <option value="bank_transfer">Bank Transfer</option>
             </select>
           </div>
@@ -347,7 +349,7 @@ export function DonationManagement() {
                       {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="p-4 capitalize text-muted-foreground text-xs">
-                      {item.paymentMethod.replace("_", " ")}
+                      {item.paymentMethod === "nowpayments" ? "Crypto (NOWPayments)" : item.paymentMethod.replace("_", " ")}
                     </td>
                     <td className="p-4 font-mono text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">

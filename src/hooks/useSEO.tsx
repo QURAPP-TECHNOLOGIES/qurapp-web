@@ -10,7 +10,7 @@ export interface SEOProps {
   noindex?: boolean;
 }
 
-const SITE_URL = "https://qurapp.com";
+const SITE_URL = "https://app.qurapp.com";
 const DEFAULT_TITLE = "QurApp - #1 Islamic Social Media App | Connect Through the Holy Quran";
 const DEFAULT_DESCRIPTION = "Join millions of Muslims worldwide in live audio rooms. Recite, listen, and discuss the Holy Quran together in a beautiful spiritual community.";
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;

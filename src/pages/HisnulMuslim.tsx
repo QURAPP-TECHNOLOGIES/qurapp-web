@@ -50,7 +50,7 @@ const HisnulMuslim = () => {
   useSEO({
     title: `${t.hisnulMuslimPage.title} - ${t.hisnulMuslimPage.subtitle} | Standalone Offline App`,
     description: t.hisnulMuslimPage.description,
-    url: "/hisnul-muslim",
+    url: "/products/hisnul-muslim",
     image: "/hsl-open-graph.jpg",
   });
 

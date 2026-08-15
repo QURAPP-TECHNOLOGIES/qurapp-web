@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import {
   Heart, ShieldCheck, Cpu, Award, Sparkles, CreditCard,
-  Wallet, ExternalLink, Globe, Landmark, Mail, User, Copy, Check, Users
+  ExternalLink, Globe, Landmark, Mail, User, Copy, Users,
+  Loader2
 } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import { useToast } from "@/hooks/use-toast";
@@ -377,42 +378,48 @@ const Donate = () => {
       toast({
         variant: "destructive",
         title: "Email Required",
-        description: "Please enter your email address to help us identify your crypto donation."
+        description: "Please enter your email address to initialize the secure crypto checkout."
       });
       return;
     }
     setIsSubmittingCrypto(true);
     try {
-      const cryptoMethodName = `crypto (${selectedCrypto.toUpperCase()})`;
-      const res = await fetch(`${apiGatewayUrl}/api/v1/donations`, {
+      const res = await fetch(`${apiGatewayUrl}/api/v1/donations/nowpayments-invoice`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: donorName || "Anonymous Sender",
           email: donorEmail,
           amount: currentAmount,
-          currency: "USD",
-          paymentMethod: cryptoMethodName,
-          reference: cryptoRef || `TX-${selectedCrypto.toUpperCase()}-${Date.now()}`
+          currency: currencyCode
         })
       });
-      if (!res.ok) throw new Error("Failed to log transfer receipt.");
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to initialize NOWPayments session.");
+      }
+
+      const { invoiceUrl } = await res.json();
+      if (!invoiceUrl) throw new Error("Invoice checkout URL is missing.");
+
       toast({
-        title: "Receipt Logged!",
-        description: "Thank you! Our operations team will verify the hash on the block explorer within 24 hours.",
+        title: "Redirecting...",
+        description: "Launching secure crypto payment window. Complete your payment in the new tab."
       });
-      setCryptoConfirmed(true);
-      setCryptoRef("");
-      fetchStats(); // Update stats live!
-      setTimeout(() => {
-        setIsModalOpen(false);
-        setCryptoConfirmed(false);
-      }, 3000);
-    } catch (e) {
+
+      // Close the Radix UI dialog modal to release body pointer scroll locks
+      setIsModalOpen(false);
+
+      // Open the invoice URL in a new window/tab
+      window.open(invoiceUrl, "_blank");
+
+    } catch (e: any) {
+      console.error("Crypto payment initialization failed:", e);
       toast({
         variant: "destructive",
-        title: "Submission Error",
-        description: "Failed to submit crypto confirmation receipt. Please try again."
+        title: "Checkout Error",
+        description: e.message || "Failed to start crypto payment session. Please try again."
       });
     } finally {
       setIsSubmittingCrypto(false);
@@ -551,32 +558,32 @@ const Donate = () => {
                 </div>
 
                 {/* Frequency Toggle */}
-                 <div className="flex justify-center pt-2">
-                   <div className="bg-muted/60 p-1.5 rounded-xl flex items-center gap-1.5 border border-border">
-                     <button
-                       onClick={() => setFrequency("monthly")}
-                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${frequency === "monthly"
-                         ? "bg-amber-500 text-slate-950 shadow-md"
-                         : "text-muted-foreground hover:text-foreground"
-                         }`}
-                     >
-                       <span>Monthly Supporter</span>
-                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold tracking-wide uppercase ${frequency === "monthly"
-                         ? "bg-slate-950/20 text-slate-950"
-                         : "bg-amber-500/20 text-amber-500"
-                         }`}>Sustainer 🌙</span>
-                     </button>
-                     <button
-                       onClick={() => setFrequency("one-time")}
-                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${frequency === "one-time"
-                         ? "bg-amber-500 text-slate-950 shadow-md"
-                         : "text-muted-foreground hover:text-foreground"
-                         }`}
-                     >
-                       One-time Contribution
-                     </button>
-                   </div>
-                 </div>
+                <div className="flex justify-center pt-2">
+                  <div className="bg-muted/60 p-1.5 rounded-xl flex items-center gap-1.5 border border-border">
+                    <button
+                      onClick={() => setFrequency("monthly")}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${frequency === "monthly"
+                        ? "bg-amber-500 text-slate-950 shadow-md"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                      <span>Monthly Supporter</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold tracking-wide uppercase ${frequency === "monthly"
+                        ? "bg-slate-950/20 text-slate-950"
+                        : "bg-amber-500/20 text-amber-500"
+                        }`}>Sustainer 🌙</span>
+                    </button>
+                    <button
+                      onClick={() => setFrequency("one-time")}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${frequency === "one-time"
+                        ? "bg-amber-500 text-slate-950 shadow-md"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                      One-time Contribution
+                    </button>
+                  </div>
+                </div>
               </CardHeader>
 
               <CardContent className="p-6 sm:p-8 space-y-8">
@@ -905,107 +912,14 @@ const Donate = () => {
                   </p>
                 )}
                 {paymentMethod === "crypto" && (
-                  <div className="text-xs space-y-4 bg-background p-4 rounded-xl border border-border">
-                    <p className="font-bold text-foreground">Select Recipient Crypto Asset:</p>
-
-                    {/* Crypto Selector Tabs */}
-                    <div className="grid grid-cols-3 gap-1 bg-muted/40 p-1 rounded-lg border border-border/60">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedCrypto("usdt")}
-                        className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${selectedCrypto === "usdt"
-                          ? "bg-amber-500 text-slate-950 shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                          }`}
-                      >
-                        USDT (TRC20)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedCrypto("eth")}
-                        className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${selectedCrypto === "eth"
-                          ? "bg-indigo-600 text-white shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                          }`}
-                      >
-                        ETH (ERC20)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedCrypto("btc")}
-                        className={`py-1.5 rounded-md text-[10px] font-bold transition-all ${selectedCrypto === "btc"
-                          ? "bg-orange-500 text-white shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                          }`}
-                      >
-                        BTC
-                      </button>
-                    </div>
-
-                    <div className="space-y-2 pt-1 font-mono text-[10px] break-all">
-                      <div className="flex justify-between items-center py-1 border-b border-border/50">
-                        <span className="text-muted-foreground font-sans">Network:</span>
-                        <strong className="text-foreground">
-                          {selectedCrypto === "usdt" ? "TRON (TRC20)" : selectedCrypto === "eth" ? "Ethereum (ERC20)" : "Bitcoin"}
-                        </strong>
-                      </div>
-                      <div className="flex flex-col gap-1.5 py-1">
-                        <span className="text-muted-foreground font-sans">Deposit Address:</span>
-                        <div className="flex items-center justify-between gap-1.5 bg-muted/50 p-2 rounded-lg border border-border/60">
-                          <strong className="text-emerald-500 select-all font-semibold">
-                            {selectedCrypto === "usdt"
-                              ? cryptoAddresses.usdt
-                              : selectedCrypto === "eth"
-                                ? cryptoAddresses.eth
-                                : cryptoAddresses.btc}
-                          </strong>
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(
-                              selectedCrypto === "usdt"
-                                ? cryptoAddresses.usdt
-                                : selectedCrypto === "eth"
-                                  ? cryptoAddresses.eth
-                                  : cryptoAddresses.btc,
-                              "Deposit address"
-                            )}
-                            className="text-primary hover:text-primary-foreground p-0.5"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {!cryptoConfirmed ? (
-                      <div className="space-y-2 pt-2 border-t mt-2">
-                        <p className="font-semibold text-foreground text-[11px] font-sans">Confirm Transfer Hash:</p>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="e.g. Transaction Hash / Sending Address"
-                            value={cryptoRef}
-                            onChange={(e) => setCryptoRef(e.target.value)}
-                            className="h-8 text-xs bg-card font-mono"
-                          />
-                          <Button
-                            size="sm"
-                            type="button"
-                            disabled={isSubmittingCrypto}
-                            onClick={handleConfirmCrypto}
-                            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs h-8 px-3"
-                          >
-                            {isSubmittingCrypto ? "Sending..." : "Notify Transfer"}
-                          </Button>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground font-sans">
-                          Enter your transaction Hash (TxID) or sender address, and notify once transferred.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-center rounded-lg font-semibold text-xs font-sans">
-                        ✓ Crypto receipt reported successfully!
-                      </div>
-                    )}
+                  <div className="text-xs space-y-3 bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/25">
+                    <p className="font-bold text-indigo-500 text-sm">Crypto Checkout (NOWPayments)</p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      You will be redirected to the secure **NOWPayments** checkout window, where you can choose to pay in **Bitcoin (BTC)**, **Ethereum (ETH)**, **USDT**, or any of their 100+ supported cryptocurrencies.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      🔒 Payments are securely tokenized and monitored in real-time.
+                    </p>
                   </div>
                 )}
 
@@ -1133,12 +1047,21 @@ const Donate = () => {
                 )}
               </div>
 
-              {paymentMethod !== "bank_transfer" && paymentMethod !== "crypto" && (
+              {paymentMethod !== "bank_transfer" && (
                 <Button
                   onClick={handleProceedPayment}
+                  disabled={isSubmittingCrypto}
                   className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold gap-2"
                 >
-                  Proceed to Checkout <ExternalLink className="w-4 h-4" />
+                  {isSubmittingCrypto ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Initializing...
+                    </>
+                  ) : (
+                    <>
+                      Proceed to Checkout <ExternalLink className="w-4 h-4" />
+                    </>
+                  )}
                 </Button>
               )}
             </div>
