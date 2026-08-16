@@ -43,7 +43,7 @@ const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center pt-20 pb-16 overflow-hidden">
       {/* Animated hero background */}
-      <AnimatedHeroBackground />
+      {/* <AnimatedHeroBackground /> */}
 
       <div className="container relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -119,8 +119,8 @@ const HeroSection = () => {
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-2 rtl:space-x-reverse">
                   {[1, 2, 3, 4].map((i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-gold/20 border-2 border-background flex items-center justify-center text-xs font-semibold text-primary"
                     >
                       {String.fromCharCode(64 + i)}

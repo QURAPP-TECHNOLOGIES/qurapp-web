@@ -4,8 +4,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Sparkles, Heart, BookOpen, Volume2, Bot, ShieldCheck, 
+import {
+  Sparkles, Heart, BookOpen, Volume2, Bot, ShieldCheck,
   Users, ArrowRight, CheckCircle2, Globe, Cpu, Award
 } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
@@ -27,7 +27,7 @@ const CompanyHome = () => {
         {/* Hero Section */}
         <section className="relative py-24 md:py-32 overflow-hidden border-b border-border/40 min-h-[85vh] flex items-center">
           {/* Animated Hero Background */}
-          <AnimatedHeroBackground />
+          {/* <AnimatedHeroBackground /> */}
 
           <div className="container relative z-10">
             <div className="max-w-3xl mx-auto text-center space-y-6">
@@ -328,7 +328,7 @@ const CompanyHome = () => {
                     <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-500 bg-emerald-500/5">100% Passed</Badge>
                   </div>
                   <pre className="font-mono text-xs text-muted-foreground bg-muted/30 p-4 rounded-lg overflow-x-auto leading-relaxed border border-border/20">
-{`{
+                    {`{
   "model": "qurapp-scholar-v1",
   "eval_dataset": "shamela-fiqh-hadith-v4",
   "citation_accuracy": "99.4%",
@@ -349,7 +349,7 @@ const CompanyHome = () => {
         <section className="py-24 relative overflow-hidden border-b border-border/40">
           <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-background/40 to-primary/5 backdrop-blur-md" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-glow-spot blur-3xl opacity-30 dark:opacity-20 pointer-events-none" />
-          
+
           <motion.div
             initial={{ opacity: 0, y: 35 }}
             whileInView={{ opacity: 1, y: 0 }}
