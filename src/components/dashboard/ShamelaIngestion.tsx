@@ -57,6 +57,7 @@ export function ShamelaIngestion() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [startingJob, setStartingJob] = useState(false);
   const [stoppingJob, setStoppingJob] = useState(false);
+  const [now, setNow] = useState(Date.now());
 
   const { toast } = useToast();
   const terminalEndRef = useRef<HTMLDivElement>(null);
@@ -116,6 +117,34 @@ export function ShamelaIngestion() {
       fetchDbStats();
     }
   }, [status?.status]);
+
+  // Real-time ticking timer for elapsed duration
+  useEffect(() => {
+    let ticker: NodeJS.Timeout | null = null;
+    if (status?.status === 'running') {
+      setNow(Date.now());
+      ticker = setInterval(() => {
+        setNow(Date.now());
+      }, 1000);
+    }
+    return () => {
+      if (ticker) clearInterval(ticker);
+    };
+  }, [status?.status]);
+
+  const getElapsedDuration = () => {
+    if (!status || !status.startTime) return "—";
+    const start = new Date(status.startTime).getTime();
+    const end = status.endTime ? new Date(status.endTime).getTime() : now;
+    const diffMs = Math.max(0, end - start);
+    
+    const hrs = Math.floor(diffMs / 3600000);
+    const mins = Math.floor((diffMs % 3600000) / 60000);
+    const secs = Math.floor((diffMs % 60000) / 1000);
+    
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+  };
 
   const handleStartPipeline = async () => {
     if (!startId.trim() || !endId.trim()) {
@@ -447,7 +476,7 @@ export function ShamelaIngestion() {
                     <div>
                       <span className="text-xs text-muted-foreground block">Time Elapsed</span>
                       <span className="font-mono text-xs">
-                        {status.startTime ? new Date(status.startTime).toLocaleTimeString() : "—"}
+                        {getElapsedDuration()}
                       </span>
                     </div>
                   </div>
