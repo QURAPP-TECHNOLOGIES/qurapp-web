@@ -58,6 +58,7 @@ export function ShamelaIngestion() {
   const [startingJob, setStartingJob] = useState(false);
   const [stoppingJob, setStoppingJob] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [concurrency, setConcurrency] = useState("3");
 
   const { toast } = useToast();
   const terminalEndRef = useRef<HTMLDivElement>(null);
@@ -165,7 +166,8 @@ export function ShamelaIngestion() {
           start: parseInt(startId, 10),
           end: parseInt(endId, 10),
           cfCookie: cfCookie.trim() || undefined,
-          cfUserAgent: cfUserAgent.trim() || undefined
+          cfUserAgent: cfUserAgent.trim() || undefined,
+          concurrency: parseInt(concurrency, 10) || 1
         })
       });
 
@@ -331,7 +333,7 @@ export function ShamelaIngestion() {
               <CardDescription>Specify the start and end Book IDs to fetch.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-muted-foreground">Start ID</label>
                   <Input
@@ -340,7 +342,7 @@ export function ShamelaIngestion() {
                     onChange={(e) => setStartId(e.target.value)}
                     placeholder="e.g. 50"
                     disabled={status?.status === "running"}
-                    className="bg-muted/30 focus:border-primary"
+                    className="bg-muted/30 focus:border-primary text-xs"
                   />
                 </div>
                 <div className="space-y-2">
@@ -351,7 +353,20 @@ export function ShamelaIngestion() {
                     onChange={(e) => setEndId(e.target.value)}
                     placeholder="e.g. 100"
                     disabled={status?.status === "running"}
-                    className="bg-muted/30 focus:border-primary"
+                    className="bg-muted/30 focus:border-primary text-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-muted-foreground">Concurrency</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="8"
+                    value={concurrency}
+                    onChange={(e) => setConcurrency(e.target.value)}
+                    placeholder="e.g. 3"
+                    disabled={status?.status === "running"}
+                    className="bg-muted/30 focus:border-primary text-xs"
                   />
                 </div>
               </div>
