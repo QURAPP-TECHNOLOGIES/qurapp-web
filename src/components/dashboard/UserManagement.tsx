@@ -97,7 +97,7 @@ export function UserManagement() {
       className="bg-card rounded-2xl border border-border/50 overflow-hidden"
     >
       {/* Header */}
-      <div className="p-6 border-b border-border/50">
+      <div className="p-4 sm:p-6 border-b border-border/50">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground">User Management</h2>
@@ -118,18 +118,18 @@ export function UserManagement() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-3 mt-4">
+        <div className="flex flex-col sm:flex-row gap-3 mt-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search users by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-muted/50"
+              className="pl-10 bg-muted/50 text-sm"
             />
           </div>
           <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-full md:w-40 bg-muted/50">
+            <SelectTrigger className="w-full sm:w-40 bg-muted/50">
               <SelectValue placeholder="Role" />
             </SelectTrigger>
             <SelectContent>
@@ -140,7 +140,7 @@ export function UserManagement() {
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-40 bg-muted/50">
+            <SelectTrigger className="w-full sm:w-40 bg-muted/50">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>

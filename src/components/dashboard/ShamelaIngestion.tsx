@@ -48,7 +48,7 @@ export function ShamelaIngestion() {
   const [status, setStatus] = useState<JobStatus | null>(null);
   const [dbStats, setDbStats] = useState<DBStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
-  
+
   // Inputs
   const [startId, setStartId] = useState("");
   const [endId, setEndId] = useState("");
@@ -85,7 +85,7 @@ export function ShamelaIngestion() {
       if (res.ok) {
         const data: JobStatus = await res.json();
         setStatus(data);
-        
+
         // Auto-scroll terminal logs if running
         if (terminalEndRef.current) {
           terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -138,11 +138,11 @@ export function ShamelaIngestion() {
     const start = new Date(status.startTime).getTime();
     const end = status.endTime ? new Date(status.endTime).getTime() : now;
     const diffMs = Math.max(0, end - start);
-    
+
     const hrs = Math.floor(diffMs / 3600000);
     const mins = Math.floor((diffMs % 3600000) / 60000);
     const secs = Math.floor((diffMs % 60000) / 1000);
-    
+
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
   };
@@ -274,7 +274,7 @@ export function ShamelaIngestion() {
               <BookOpen className="h-4 w-4 text-primary" />
             </div>
             <div className="mt-2 text-2xl font-bold font-display">
-              {dbStats ? dbStats.totalBooks : "—"}
+              {dbStats ? dbStats.totalBooks.toLocaleString() : "—"}
             </div>
           </CardContent>
         </Card>
@@ -285,7 +285,7 @@ export function ShamelaIngestion() {
               <User className="h-4 w-4 text-primary" />
             </div>
             <div className="mt-2 text-2xl font-bold font-display">
-              {dbStats ? dbStats.totalAuthors : "—"}
+              {dbStats ? dbStats.totalAuthors.toLocaleString() : "—"}
             </div>
           </CardContent>
         </Card>
@@ -307,7 +307,7 @@ export function ShamelaIngestion() {
               <Hash className="h-4 w-4 text-primary" />
             </div>
             <div className="mt-2 text-2xl font-bold font-display">
-              {dbStats ? dbStats.totalChapters : "—"}
+              {dbStats ? dbStats.totalChapters.toLocaleString() : "—"}
             </div>
           </CardContent>
         </Card>

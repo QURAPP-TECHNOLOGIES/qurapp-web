@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, BookOpen, MessageSquare, Trophy,
-  Bell, Search, Settings, Menu,
+  Bell, Search, Settings, Menu, X,
   Calendar, Download, Filter, Mail, Send, Database, Image, Music, Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ import logo from "@/assets/logo.png";
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
 
   useSEO({
@@ -98,11 +99,79 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMobileSidebarOpen(false)}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Drawer Sidebar */}
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <motion.aside
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-y-0 left-0 z-50 w-72 bg-card border-r border-border/50 flex flex-col py-6 shadow-2xl md:hidden"
+          >
+            <div className="px-4 mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img
+                  src={logo}
+                  alt="QurApp Logo"
+                  className="h-8 w-auto"
+                />
+                <span className="font-bold text-lg text-foreground">
+                  QurApp
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileSidebarOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <nav className="flex-1 px-3 overflow-y-auto space-y-1">
+              {navItems.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileSidebarOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${activeTab === item.id
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    }`}
+                >
+                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  <span className="text-sm font-medium">
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </nav>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop Sidebar */}
       <motion.aside
         initial={{ width: sidebarOpen ? 240 : 80 }}
         animate={{ width: sidebarOpen ? 240 : 80 }}
-        className="bg-card border-r border-border/50 flex flex-col py-6 transition-all duration-300"
+        className="hidden md:flex bg-card border-r border-border/50 flex-col py-6 transition-all duration-300"
       >
         <div className="px-4 mb-8">
           <div className="flex items-center gap-3">
@@ -131,7 +200,7 @@ export default function Dashboard() {
               key={item.label}
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 transition-all ${activeTab === item.id
-                ? "bg-primary/10 text-primary"
+                ? "bg-primary/10 text-primary font-semibold"
                 : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }`}
             >
@@ -159,35 +228,44 @@ export default function Dashboard() {
       </motion.aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Header */}
-        <header className="h-16 bg-card/50 backdrop-blur-sm border-b border-border/50 flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
-            <div className="relative">
+        <header className="h-16 bg-card/50 backdrop-blur-sm border-b border-border/50 flex items-center justify-between px-3 sm:px-6 gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden text-foreground hover:bg-muted/50 shrink-0"
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+            <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">Dashboard</h1>
+            <div className="relative hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search..."
-                className="pl-10 w-64 bg-muted/50 border-border/50 focus:border-primary"
+                className="pl-9 w-32 md:w-48 lg:w-64 bg-muted/50 border-border/50 focus:border-primary text-sm"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <Button variant="outline" size="sm" className="hidden lg:flex gap-2">
               <Calendar className="h-4 w-4" />
               Last 30 days
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button variant="outline" size="sm" className="hidden sm:flex gap-2">
               <Filter className="h-4 w-4" />
-              Filter
+              <span className="hidden md:inline">Filter</span>
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button variant="outline" size="sm" className="p-2 sm:px-3 gap-2">
               <Download className="h-4 w-4" />
-              Export
+              <span className="hidden sm:inline">Export</span>
             </Button>
 
-            <div className="h-6 w-px bg-border mx-2" />
+            <div className="h-6 w-px bg-border mx-1 sm:mx-2" />
 
             <ThemeToggle />
 
@@ -215,7 +293,7 @@ export default function Dashboard() {
         </header>
 
         {/* Dashboard Content */}
-        <main className="flex-1 overflow-auto p-6 bg-background">
+        <main className="flex-1 overflow-auto p-3 sm:p-6 bg-background">
           {activeTab === "dashboard" && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}

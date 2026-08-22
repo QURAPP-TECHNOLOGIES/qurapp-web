@@ -21,7 +21,7 @@ const typeStyles = {
 
 export function RecentActivityTable() {
   return (
-    <Card className="bg-card border-border/50 col-span-2">
+    <Card className="bg-card border-border/50 col-span-1 lg:col-span-2">
       <CardHeader>
         <CardTitle className="text-foreground">Recent Activity</CardTitle>
       </CardHeader>
@@ -30,20 +30,20 @@ export function RecentActivityTable() {
           {activities.map((activity) => (
             <div
               key={activity.id}
-              className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors gap-2 sm:gap-4"
             >
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar className="h-10 w-10 shrink-0">
                   <AvatarFallback className="bg-primary/20 text-primary text-sm">
                     {activity.user.split(" ").map(n => n[0]).join("")}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="text-sm font-medium text-foreground">{activity.user}</p>
-                  <p className="text-xs text-muted-foreground">{activity.action}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{activity.user}</p>
+                  <p className="text-xs text-muted-foreground truncate">{activity.action}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pl-13 sm:pl-0">
                 <Badge variant="outline" className={typeStyles[activity.type as keyof typeof typeStyles]}>
                   {activity.type}
                 </Badge>
