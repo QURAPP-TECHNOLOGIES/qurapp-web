@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, BookOpen, MessageSquare, Trophy,
   Bell, Search, Settings, Menu, X,
-  Calendar, Download, Filter, Mail, Send, Database, Image, Music, Heart
+  Calendar, Download, Filter, Mail, Send, Database, Image, Music, Heart, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ import { HisnulMuslimFeedback } from "@/components/dashboard/HisnulMuslimFeedbac
 import { DonationManagement } from "@/components/dashboard/DonationManagement";
 import { ShamelaIngestion } from "@/components/dashboard/ShamelaIngestion";
 import { QuranDataManagement } from "@/components/dashboard/QuranDataManagement";
+import { QMentorLLMConfig } from "@/components/dashboard/QMentorLLMConfig";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSEO } from "@/hooks/useSEO";
 import logo from "@/assets/logo.png";
@@ -85,6 +86,7 @@ export default function Dashboard() {
 
   const navItems = [
     { label: "Dashboard", icon: Menu, id: "dashboard" },
+    { label: "QurAI Mentor", icon: Sparkles, id: "qmentor" },
     { label: "Quran Assets", icon: Database, id: "quran-assets" },
     { label: "Hisnul Muslim", icon: Music, id: "hisnul-muslim" },
     { label: "Islamic Gallery", icon: Image, id: "gallery" },
@@ -336,6 +338,16 @@ export default function Dashboard() {
                 <LanguageDistributionChart />
                 <TopContentTable />
               </div>
+            </motion.div>
+          )}
+
+          {activeTab === "qmentor" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <QMentorLLMConfig />
             </motion.div>
           )}
 
