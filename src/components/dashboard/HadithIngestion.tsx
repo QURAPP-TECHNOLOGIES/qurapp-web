@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Play,
   Terminal,
@@ -14,7 +13,8 @@ import {
   BookOpen,
   Award,
   Globe2,
-  ShieldCheck
+  ShieldCheck,
+  Library
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ type HadithJobStatus = {
   status: 'idle' | 'running' | 'completed' | 'failed';
   ingestionId: string | null;
   sourceId: string | null;
+  collectionId: string | null;
   datasetVersion: string | null;
   dryRun: boolean;
   totalRecords: number;
@@ -60,13 +61,27 @@ type HadithDBStats = {
   }>;
 };
 
+const COLLECTIONS_LIST = [
+  { id: "nawawi", name: "Forty Hadith of an-Nawawi (42 hadiths)" },
+  { id: "bukhari", name: "Sahih al-Bukhari (7,563 hadiths)" },
+  { id: "muslim", name: "Sahih Muslim (7,500 hadiths)" },
+  { id: "tirmidhi", name: "Jami' al-Tirmidhi (3,956 hadiths)" },
+  { id: "abudawud", name: "Sunan Abi Dawud (5,274 hadiths)" },
+  { id: "nasai", name: "Sunan an-Nasa'i (5,758 hadiths)" },
+  { id: "ibnmajah", name: "Sunan Ibn Majah (4,341 hadiths)" },
+  { id: "malik", name: "Muwatta Malik (1,858 hadiths)" },
+  { id: "riyadussalihin", name: "Riyad as-Salihin (1,896 hadiths)" },
+  { id: "all", name: "All Canonical Collections (Sequential Batch)" },
+];
+
 export function HadithIngestion() {
   const [status, setStatus] = useState<HadithJobStatus | null>(null);
   const [dbStats, setDbStats] = useState<HadithDBStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [startingJob, setStartingJob] = useState(false);
-  const [selectedSource, setSelectedSource] = useState("open-hadith-data");
-  const [datasetVersion, setDatasetVersion] = useState("v2.1");
+  const [selectedSource, setSelectedSource] = useState("fawazahmed0-hadith");
+  const [selectedCollection, setSelectedCollection] = useState("nawawi");
+  const [datasetVersion, setDatasetVersion] = useState("v1.0");
   const [isDryRun, setIsDryRun] = useState(false);
 
   const { toast } = useToast();
@@ -133,6 +148,7 @@ export function HadithIngestion() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sourceId: selectedSource,
+          collectionId: selectedCollection,
           datasetVersion,
           dryRun: isDryRun,
         }),
@@ -140,8 +156,8 @@ export function HadithIngestion() {
 
       if (res.ok) {
         toast({
-          title: isDryRun ? "Validation Run Started" : "Hadith Ingestion Started",
-          description: "Corpus parsing and canonicalization spawned successfully.",
+          title: isDryRun ? "Validation Run Started" : "Real Hadith Ingestion Started",
+          description: `Ingestion job for ${selectedCollection} spawned successfully.`,
         });
         fetchJobStatus();
       } else {
@@ -183,7 +199,7 @@ export function HadithIngestion() {
             Hadith Corpus & Ingestion Manager
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Canonicalize, validate, and publish verified Hadith collections to PostgreSQL and Cloudflare R2 storage.
+            Download, parse, canonicalize, and stream authentic Hadith collections directly to PostgreSQL and Cloudflare R2.
           </p>
         </div>
         <Button
@@ -278,21 +294,40 @@ export function HadithIngestion() {
             <CardHeader>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" />
-                Source Selection & Ingestion Gate
+                Real Corpus Selection & Gate
               </CardTitle>
-              <CardDescription>Select an approved Hadith dataset to parse and canonicalize.</CardDescription>
+              <CardDescription>Select an authentic collection to download, canonicalize, and upload to R2.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground">Source Dataset</label>
+                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Library className="h-3.5 w-3.5 text-primary" />
+                  Canonical Collection
+                </label>
+                <select
+                  value={selectedCollection}
+                  onChange={(e) => setSelectedCollection(e.target.value)}
+                  disabled={status?.status === "running"}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                >
+                  {COLLECTIONS_LIST.map((col) => (
+                    <option key={col.id} value={col.id}>
+                      {col.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground">Source Provider</label>
                 <select
                   value={selectedSource}
                   onChange={(e) => setSelectedSource(e.target.value)}
                   disabled={status?.status === "running"}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <option value="open-hadith-data">Open-Hadith-Data (Canonical Arabic - Approved)</option>
-                  <option value="fawazahmed0-hadith">Fawaz Ahmed Multi-lingual API (Secondary - Approved)</option>
+                  <option value="fawazahmed0-hadith">Fawaz Ahmed Multi-lingual Edition (Arabic + English - Approved)</option>
+                  <option value="open-hadith-data">Open-Hadith-Data Corpus (Arabic Classical - Approved)</option>
                   <option value="lk-hadith-corpus" disabled>LK Hadith Corpus (Research Only - Restricted)</option>
                   <option value="sunnah-com-reference" disabled>Sunnah.com Reference (Reference Only)</option>
                 </select>
@@ -303,7 +338,7 @@ export function HadithIngestion() {
                 <Input
                   value={datasetVersion}
                   onChange={(e) => setDatasetVersion(e.target.value)}
-                  placeholder="e.g. v2.1"
+                  placeholder="e.g. v1.0"
                   disabled={status?.status === "running"}
                   className="bg-muted/30 text-xs"
                 />
@@ -347,7 +382,7 @@ export function HadithIngestion() {
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div>
                 <CardTitle className="text-base font-semibold">Hadith Pipeline Monitor</CardTitle>
-                <CardDescription>Execution progress, duplicate analysis, and logs.</CardDescription>
+                <CardDescription>Execution progress, duplicate analysis, and streaming logs.</CardDescription>
               </div>
               {status && (
                 <Badge variant="outline" className={getStatusColor(status.status)}>
@@ -360,8 +395,8 @@ export function HadithIngestion() {
                 <div className="space-y-4 bg-muted/20 p-4 rounded-xl border">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-xs text-muted-foreground block">Active Ingestion</span>
-                      <span className="font-semibold">{status.sourceId} ({status.datasetVersion})</span>
+                      <span className="text-xs text-muted-foreground block">Active Target</span>
+                      <span className="font-semibold">{status.collectionId || "All"} ({status.datasetVersion})</span>
                     </div>
                     <div>
                       <span className="text-xs text-muted-foreground block">Progress</span>
@@ -404,7 +439,7 @@ export function HadithIngestion() {
                 <div className="text-center py-8 bg-muted/10 rounded-xl border border-dashed text-muted-foreground flex flex-col items-center">
                   <CheckCircle2 className="h-10 w-10 opacity-30 mb-2" />
                   <p className="text-sm font-semibold">No Active Hadith Ingestion</p>
-                  <p className="text-xs text-muted-foreground mt-1">Select a source dataset and trigger ingestion.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Select a canonical collection and tap Publish.</p>
                 </div>
               )}
 
@@ -419,7 +454,7 @@ export function HadithIngestion() {
                     status.logs.map((log, index) => {
                       let color = "text-zinc-300";
                       if (log.includes("ERROR")) color = "text-red-400";
-                      else if (log.includes("completed") || log.includes("accepted")) color = "text-green-400";
+                      else if (log.includes("completed") || log.includes("accepted") || log.includes("Successfully")) color = "text-green-400";
                       return (
                         <div key={index} className={`${color} leading-relaxed whitespace-pre-wrap`}>
                           {log}
