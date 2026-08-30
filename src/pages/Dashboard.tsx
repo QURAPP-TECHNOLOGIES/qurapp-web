@@ -35,6 +35,7 @@ import { HisnulMuslimConfig } from "@/components/dashboard/HisnulMuslimConfig";
 import { HisnulMuslimFeedback } from "@/components/dashboard/HisnulMuslimFeedback";
 import { DonationManagement } from "@/components/dashboard/DonationManagement";
 import { ShamelaIngestion } from "@/components/dashboard/ShamelaIngestion";
+import { HadithIngestion } from "@/components/dashboard/HadithIngestion";
 import { QuranDataManagement } from "@/components/dashboard/QuranDataManagement";
 import { QMentorLLMConfig } from "@/components/dashboard/QMentorLLMConfig";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -91,6 +92,7 @@ export default function Dashboard() {
     { label: "Hisnul Muslim", icon: Music, id: "hisnul-muslim" },
     { label: "Islamic Gallery", icon: Image, id: "gallery" },
     { label: "Shamela Ingest", icon: Database, id: "shamela" },
+    { label: "Hadith Ingest", icon: Database, id: "hadith-ingest" },
     { label: "Qur'an Data", icon: Database, id: "quran-canonical" },
     { label: "Users", icon: Users, id: "users" },
     { label: "Emails", icon: Mail, id: "emails" },
@@ -398,6 +400,16 @@ export default function Dashboard() {
               transition={{ duration: 0.5 }}
             >
               <ShamelaIngestion />
+            </motion.div>
+          )}
+
+          {activeTab === "hadith-ingest" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <HadithIngestion />
             </motion.div>
           )}
 
