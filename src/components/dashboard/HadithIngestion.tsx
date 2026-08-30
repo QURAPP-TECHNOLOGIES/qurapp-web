@@ -14,7 +14,9 @@ import {
   Award,
   Globe2,
   ShieldCheck,
-  Library
+  Library,
+  GitBranch,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,9 @@ type HadithJobStatus = {
   sourceId: string | null;
   collectionId: string | null;
   datasetVersion: string | null;
+  repositoryCommit: string | null;
+  configurationVersion: string | null;
+  upstreamSourceId: string | null;
   dryRun: boolean;
   totalRecords: number;
   processedRecords: number;
@@ -62,17 +67,73 @@ type HadithDBStats = {
 };
 
 const COLLECTIONS_LIST = [
-  { id: "nawawi", name: "Forty Hadith of an-Nawawi (42 hadiths)" },
-  { id: "qudsi", name: "Forty Hadith Qudsi (40 hadiths)" },
-  { id: "dehlawi", name: "Forty Hadith of Shah Waliullah Dehlawi (40 hadiths)" },
-  { id: "bukhari", name: "Sahih al-Bukhari (7,563 hadiths)" },
-  { id: "muslim", name: "Sahih Muslim (7,500 hadiths)" },
-  { id: "tirmidhi", name: "Jami' al-Tirmidhi (3,956 hadiths)" },
-  { id: "abudawud", name: "Sunan Abi Dawud (5,274 hadiths)" },
-  { id: "nasai", name: "Sunan an-Nasa'i (5,758 hadiths)" },
-  { id: "ibnmajah", name: "Sunan Ibn Majah (4,341 hadiths)" },
-  { id: "malik", name: "Muwatta Malik (1,858 hadiths)" },
-  { id: "all", name: "All Canonical Collections (Sequential Batch)" },
+  { id: "nawawi", name: "Forty Hadith of an-Nawawi (42 hadiths)", upstream: "fawazahmed0-hadith" },
+  { id: "qudsi", name: "Forty Hadith Qudsi (40 hadiths)", upstream: "fawazahmed0-hadith" },
+  { id: "dehlawi", name: "Forty Hadith of Shah Waliullah Dehlawi (40 hadiths)", upstream: "fawazahmed0-hadith" },
+  { id: "bukhari", name: "Sahih al-Bukhari (7,563 hadiths)", upstream: "fawazahmed0-hadith" },
+  { id: "muslim", name: "Sahih Muslim (7,500 hadiths)", upstream: "fawazahmed0-hadith" },
+  { id: "tirmidhi", name: "Jami' al-Tirmidhi (3,956 hadiths)", upstream: "fawazahmed0-hadith" },
+  { id: "abudawud", name: "Sunan Abi Dawud (5,274 hadiths)", upstream: "fawazahmed0-hadith" },
+  { id: "nasai", name: "Sunan an-Nasa'i (5,758 hadiths)", upstream: "fawazahmed0-hadith" },
+  { id: "ibnmajah", name: "Sunan Ibn Majah (4,341 hadiths)", upstream: "fawazahmed0-hadith" },
+  { id: "malik", name: "Muwatta Malik (1,858 hadiths)", upstream: "fawazahmed0-hadith" },
+  { id: "ahmad", name: "Musnad Ahmad (26,363 hadiths)", upstream: "open-hadith-data" },
+  { id: "darimi", name: "Sunan al-Darimi (3,367 hadiths)", upstream: "open-hadith-data" },
+  { id: "hadeethenc", name: "HadeethEnc Curated Selection (72-lang with Sharh & Benefits)", upstream: "hadeethenc.com" },
+  { id: "all", name: "All Canonical Collections (Sequential Batch)", upstream: "multi-source" },
+];
+
+const SOURCE_REGISTRY_METRICS = [
+  {
+    id: "quranlab-hadith",
+    name: "QuranLab Hadith & Sunnah",
+    role: "PRIMARY_ACQUISITION",
+    lineage: "Packaging Layer (HF Parquet)",
+    version: "2026.08-rev1 (Commit c3a81f8)",
+    license: "Mixed / ODbL-1.0 (Arabic) / Educational Reference",
+    commercial: "Arabic: OK / Trans: Ref Only",
+    badge: "Primary Source",
+  },
+  {
+    id: "fawazahmed0-hadith",
+    name: "Fawaz Ahmed Multi-lingual API",
+    role: "UPSTREAM_PROVENANCE",
+    lineage: "Upstream for 6 Books + 40 Hadiths",
+    version: "v1.0 (Commit @1)",
+    license: "MIT / Public Domain / Darussalam",
+    commercial: "Arabic: OK / Trans: Notice-TD",
+    badge: "Upstream Baseline",
+  },
+  {
+    id: "open-hadith-data",
+    name: "Open-Hadith-Data Corpus",
+    role: "UPSTREAM_PROVENANCE",
+    lineage: "Upstream for Ahmad & Darimi",
+    version: "v2.1",
+    license: "ODbL-1.0 + DbCL-1.0",
+    commercial: "Open Database (Attribution)",
+    badge: "Arabic Provenance",
+  },
+  {
+    id: "hadeethenc",
+    name: "Encyclopedia of Translated Hadiths",
+    role: "SEPARATE_SOURCE_LAYER",
+    lineage: "IslamHouse / Saudi MoIA (72 Langs)",
+    version: "v2026.1",
+    license: "Verbatim Educational Redistribution",
+    commercial: "Non-Commercial Verbatim",
+    badge: "Explanations & Grades",
+  },
+  {
+    id: "sunnah-com-reference",
+    name: "Sunnah.com Reference Standard",
+    role: "REFERENCE",
+    lineage: "External Abdul-Baqi Numbering Standard",
+    version: "v2026",
+    license: "Proprietary Reference Only",
+    commercial: "Reference Only",
+    badge: "Reference Standard",
+  },
 ];
 
 export function HadithIngestion() {
@@ -80,9 +141,9 @@ export function HadithIngestion() {
   const [dbStats, setDbStats] = useState<HadithDBStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [startingJob, setStartingJob] = useState(false);
-  const [selectedSource, setSelectedSource] = useState("fawazahmed0-hadith");
+  const [selectedSource, setSelectedSource] = useState("quranlab-hadith");
   const [selectedCollection, setSelectedCollection] = useState("nawawi");
-  const [datasetVersion, setDatasetVersion] = useState("v1.0");
+  const [datasetVersion, setDatasetVersion] = useState("2026.08-rev1");
   const [isDryRun, setIsDryRun] = useState(false);
 
   const { toast } = useToast();
@@ -151,6 +212,8 @@ export function HadithIngestion() {
           sourceId: selectedSource,
           collectionId: selectedCollection,
           datasetVersion,
+          repositoryCommit: "c3a81f8",
+          configurationVersion: "2026.08",
           dryRun: isDryRun,
         }),
       });
@@ -158,7 +221,7 @@ export function HadithIngestion() {
       if (res.ok) {
         toast({
           title: isDryRun ? "Validation Run Started" : "Real Hadith Ingestion Started",
-          description: `Ingestion job for ${selectedCollection} spawned successfully.`,
+          description: `Ingestion job for ${selectedCollection} via ${selectedSource} spawned successfully.`,
         });
         fetchJobStatus();
       } else {
@@ -197,10 +260,10 @@ export function HadithIngestion() {
         <div>
           <h2 className="text-2xl font-bold text-foreground font-display flex items-center gap-2">
             <Database className="h-6 w-6 text-primary" />
-            Hadith Corpus & Ingestion Manager
+            Hadith Corpus & Ingestion Manager (Phase 9A.5)
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Download, parse, canonicalize, and stream authentic Hadith collections directly to PostgreSQL and Cloudflare R2.
+            Primary acquisition via <span className="font-semibold text-primary">quranlab/hadith</span> with immutable version pinning, upstream lineage tracing, and direct Cloudflare R2 / PostgreSQL persistence.
           </p>
         </div>
         <Button
@@ -288,6 +351,50 @@ export function HadithIngestion() {
         </Card>
       </div>
 
+      {/* Source Registry & Lineage Table */}
+      <Card className="border-border/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <GitBranch className="h-4 w-4 text-primary" />
+            Source Registry, Roles & Lineage Governance
+          </CardTitle>
+          <CardDescription className="text-xs">
+            QurAI distinguishes primary acquisition packaging from upstream historical provenance and separate source layers.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b text-muted-foreground text-left">
+                  <th className="pb-2 font-medium">Source / Provider</th>
+                  <th className="pb-2 font-medium">QurAI Role</th>
+                  <th className="pb-2 font-medium">Lineage / Upstream</th>
+                  <th className="pb-2 font-medium">Version / Commit</th>
+                  <th className="pb-2 font-medium">Licensing & Commercial Terms</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {SOURCE_REGISTRY_METRICS.map((src) => (
+                  <tr key={src.id} className="hover:bg-muted/30">
+                    <td className="py-2.5 font-medium flex items-center gap-2">
+                      <span>{src.name}</span>
+                      <Badge variant="secondary" className="text-[10px] py-0 px-1.5">{src.badge}</Badge>
+                    </td>
+                    <td className="py-2.5">
+                      <code className="bg-muted px-1.5 py-0.5 rounded text-[11px] font-mono">{src.role}</code>
+                    </td>
+                    <td className="py-2.5 text-muted-foreground">{src.lineage}</td>
+                    <td className="py-2.5 font-mono text-[11px]">{src.version}</td>
+                    <td className="py-2.5 text-muted-foreground">{src.license} ({src.commercial})</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Controls */}
         <div className="lg:col-span-5 space-y-6">
@@ -295,9 +402,9 @@ export function HadithIngestion() {
             <CardHeader>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" />
-                Real Corpus Selection & Gate
+                Ingestion Configuration & Execution
               </CardTitle>
-              <CardDescription>Select an authentic collection to download, canonicalize, and upload to R2.</CardDescription>
+              <CardDescription>Select an approved canonical collection to acquire, canonicalize, and persist.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -320,28 +427,29 @@ export function HadithIngestion() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground">Source Provider</label>
+                <label className="text-xs font-semibold text-muted-foreground">Source Acquisition Provider</label>
                 <select
                   value={selectedSource}
                   onChange={(e) => setSelectedSource(e.target.value)}
                   disabled={status?.status === "running"}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <option value="fawazahmed0-hadith">Fawaz Ahmed Multi-lingual Edition (Arabic + English - Approved)</option>
-                  <option value="open-hadith-data">Open-Hadith-Data Corpus (Arabic Classical - Approved)</option>
+                  <option value="quranlab-hadith">quranlab/hadith (Primary Acquisition & Packaging Layer)</option>
+                  <option value="fawazahmed0-hadith">fawazahmed0-hadith (Upstream Baseline Direct Fetcher)</option>
+                  <option value="open-hadith-data">open-hadith-data (Arabic Classical Baseline)</option>
+                  <option value="hadeethenc">HadeethEnc.com (72-lang Verbatim Selection with Explanations)</option>
                   <option value="lk-hadith-corpus" disabled>LK Hadith Corpus (Research Only - Restricted)</option>
-                  <option value="sunnah-com-reference" disabled>Sunnah.com Reference (Reference Only)</option>
                 </select>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground">Dataset Version</label>
+                <label className="text-xs font-semibold text-muted-foreground">Dataset Version (Pinned)</label>
                 <Input
                   value={datasetVersion}
                   onChange={(e) => setDatasetVersion(e.target.value)}
-                  placeholder="e.g. v1.0"
+                  placeholder="e.g. 2026.08-rev1"
                   disabled={status?.status === "running"}
-                  className="bg-muted/30 text-xs"
+                  className="bg-muted/30 text-xs font-mono"
                 />
               </div>
 
@@ -396,8 +504,12 @@ export function HadithIngestion() {
                 <div className="space-y-4 bg-muted/20 p-4 rounded-xl border">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-xs text-muted-foreground block">Active Target</span>
-                      <span className="font-semibold">{status.collectionId || "All"} ({status.datasetVersion})</span>
+                      <span className="text-xs text-muted-foreground block">Active Target & Source</span>
+                      <span className="font-semibold">{status.collectionId || "All"} via {status.sourceId}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Upstream Lineage</span>
+                      <span className="font-semibold text-primary">{status.upstreamSourceId || "fawazahmed0-hadith"}</span>
                     </div>
                     <div>
                       <span className="text-xs text-muted-foreground block">Progress</span>
