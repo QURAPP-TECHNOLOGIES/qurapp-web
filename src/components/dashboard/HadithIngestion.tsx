@@ -63,6 +63,8 @@ type HadithDBStats = {
 
 const COLLECTIONS_LIST = [
   { id: "nawawi", name: "Forty Hadith of an-Nawawi (42 hadiths)" },
+  { id: "qudsi", name: "Forty Hadith Qudsi (40 hadiths)" },
+  { id: "dehlawi", name: "Forty Hadith of Shah Waliullah Dehlawi (40 hadiths)" },
   { id: "bukhari", name: "Sahih al-Bukhari (7,563 hadiths)" },
   { id: "muslim", name: "Sahih Muslim (7,500 hadiths)" },
   { id: "tirmidhi", name: "Jami' al-Tirmidhi (3,956 hadiths)" },
@@ -70,7 +72,6 @@ const COLLECTIONS_LIST = [
   { id: "nasai", name: "Sunan an-Nasa'i (5,758 hadiths)" },
   { id: "ibnmajah", name: "Sunan Ibn Majah (4,341 hadiths)" },
   { id: "malik", name: "Muwatta Malik (1,858 hadiths)" },
-  { id: "riyadussalihin", name: "Riyad as-Salihin (1,896 hadiths)" },
   { id: "all", name: "All Canonical Collections (Sequential Batch)" },
 ];
 
