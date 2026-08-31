@@ -14,7 +14,9 @@ import {
   Hash,
   AlertTriangle,
   CheckCircle2,
-  BookOpen
+  BookOpen,
+  Key,
+  Library
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +62,18 @@ export function ShamelaIngestion() {
   const [now, setNow] = useState(Date.now());
   const [concurrency, setConcurrency] = useState("3");
 
+  // Derived pgvector Indexing & Embeddings State
+  const [indexingStatus, setIndexingStatus] = useState<{
+    totalChunks: number;
+    totalBooks: number;
+    indexedBooks: number;
+    indexingProgressPercent: string;
+  } | null>(null);
+  const [startingIndexing, setStartingIndexing] = useState(false);
+  const [indexingBookId, setIndexingBookId] = useState("all");
+  const [incrementalOnly, setIncrementalOnly] = useState(true);
+  const [openaiApiKey, setOpenaiApiKey] = useState("");
+
   const { toast } = useToast();
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -76,6 +90,52 @@ export function ShamelaIngestion() {
       console.error("Failed to fetch DB stats", e);
     } finally {
       setLoadingStats(false);
+    }
+  };
+
+  const fetchIndexingStatus = async () => {
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/knowledge/shamela/indexing/status`);
+      if (res.ok) {
+        const data = await res.json();
+        setIndexingStatus(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch Shamela indexing status", e);
+    }
+  };
+
+  const handleStartIndexing = async () => {
+    setStartingIndexing(true);
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/knowledge/shamela/indexing/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookId: indexingBookId,
+          incrementalOnly,
+          apiKey: openaiApiKey ? openaiApiKey.trim() : undefined,
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Shamela Indexing Job Started",
+          description: `Generating pgvector retrieval chunks for ${indexingBookId === 'all' ? 'all books' : `Book #${indexingBookId}`}...`,
+        });
+        fetchIndexingStatus();
+      } else {
+        const data = await res.json();
+        throw new Error(data?.message || "Failed to start Shamela indexing.");
+      }
+    } catch (e: any) {
+      toast({
+        title: "Indexing Failed",
+        description: e.message || String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setStartingIndexing(false);
     }
   };
 
@@ -100,10 +160,12 @@ export function ShamelaIngestion() {
   useEffect(() => {
     fetchDbStats();
     fetchJobStatus();
+    fetchIndexingStatus();
 
     pollTimerRef.current = setInterval(() => {
       fetchJobStatus();
-    }, 2000);
+      fetchIndexingStatus();
+    }, 2500);
 
     return () => {
       if (pollTimerRef.current) {
@@ -116,6 +178,7 @@ export function ShamelaIngestion() {
   useEffect(() => {
     if (status && (status.status === 'completed' || status.status === 'failed' || status.status === 'stopped')) {
       fetchDbStats();
+      fetchIndexingStatus();
     }
   }, [status?.status]);
 
@@ -451,6 +514,105 @@ export function ShamelaIngestion() {
                     Spawn Ingestion Pipeline
                   </Button>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Derived pgvector Indexing & Embeddings Card */}
+          <Card className="border-border/60 shadow-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                Derived pgvector Indexing & Embeddings (QurAI RAG)
+              </CardTitle>
+              <CardDescription>
+                Derive semantic embeddings and multi-source retrieval chunks from ingested Shamela classical books.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Library className="h-3.5 w-3.5 text-primary" />
+                  Target Book ID to Index
+                </label>
+                <Input
+                  value={indexingBookId}
+                  onChange={(e) => setIndexingBookId(e.target.value)}
+                  placeholder="'all' or specific Book ID (e.g. 1)"
+                  disabled={startingIndexing}
+                  className="bg-muted/30 text-xs font-mono"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Enter <code className="text-primary font-mono font-semibold">all</code> to index all ingested books, or specify a specific Book ID.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="shamelaIncrementalCheckbox"
+                  checked={incrementalOnly}
+                  onChange={(e) => setIncrementalOnly(e.target.checked)}
+                  disabled={startingIndexing}
+                  className="rounded border-input text-primary focus:ring-primary"
+                />
+                <label htmlFor="shamelaIncrementalCheckbox" className="text-xs text-muted-foreground cursor-pointer">
+                  Incremental Only (skip already indexed books to save API tokens)
+                </label>
+              </div>
+
+              {indexingStatus && (
+                <div className="bg-muted/20 p-3 rounded-lg border text-xs space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Indexed Books:</span>
+                    <span className="font-semibold">{indexingStatus.indexedBooks.toLocaleString()} / {indexingStatus.totalBooks.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Generated Retrieval Chunks:</span>
+                    <span className="font-semibold text-primary">{indexingStatus.totalChunks.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Index Coverage:</span>
+                    <span className="font-semibold text-emerald-500">{indexingStatus.indexingProgressPercent}%</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Key className="h-3.5 w-3.5 text-primary" />
+                    OpenAI API Key (Dynamic Override)
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">Optional</span>
+                </label>
+                <Input
+                  type="password"
+                  value={openaiApiKey}
+                  onChange={(e) => setOpenaiApiKey(e.target.value)}
+                  placeholder="sk-proj-... (Uses server .env if left blank)"
+                  disabled={startingIndexing}
+                  className="bg-muted/30 text-xs font-mono"
+                />
+                <p className="text-[11px] text-muted-foreground leading-tight">
+                  Passes your API key securely to generate dense vector embeddings (<code className="text-primary font-mono">text-embedding-3-small</code>) dynamically without modifying server configuration files.
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  onClick={handleStartIndexing}
+                  disabled={startingIndexing}
+                  variant="secondary"
+                  className="w-full gap-2 font-semibold shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-transform"
+                >
+                  {startingIndexing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Layers className="h-4 w-4 text-primary" />
+                  )}
+                  Trigger Retrieval Indexing
+                </Button>
               </div>
             </CardContent>
           </Card>
