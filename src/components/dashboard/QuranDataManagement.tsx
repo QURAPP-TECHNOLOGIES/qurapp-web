@@ -19,7 +19,9 @@ import {
   Cloud,
   UploadCloud,
   Headphones,
-  Search
+  Search,
+  Sparkles,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +48,7 @@ type DBStats = {
   totalEditions: number;
   totalReciters?: number;
   totalChunks?: number;
+  totalEmbedded?: number;
 };
 
 type JobStatus = {
@@ -69,23 +72,62 @@ type TranslationEdition = {
   status: string;
 };
 
+type EmbeddingOptionTranslation = {
+  editionKey: string;
+  name: string;
+  language: string;
+  author: string;
+  totalVerses: number;
+  embeddedCount: number;
+  isEmbedded: boolean;
+};
+
+type EmbeddingOptionTafsir = {
+  id: string;
+  name: string;
+  language: string;
+  author: string;
+  totalPassages: number;
+  embeddedCount: number;
+  isEmbedded: boolean;
+};
+
+type EmbeddingsOptionsData = {
+  ayahs: { total: number; embedded: number };
+  translations: EmbeddingOptionTranslation[];
+  tafsirs: EmbeddingOptionTafsir[];
+};
+
 export function QuranDataManagement() {
   const [providerMode, setProviderMode] = useState<'quran-foundation' | 'local' | 'hybrid'>('quran-foundation');
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [dbStats, setDbStats] = useState<DBStats | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [embeddingsJobStatus, setEmbeddingsJobStatus] = useState<JobStatus | null>(null);
+  const [embeddingsOptions, setEmbeddingsOptions] = useState<EmbeddingsOptionsData | null>(null);
+  const [includeAyahs, setIncludeAyahs] = useState(true);
+  const [includeTafsirs, setIncludeTafsirs] = useState(false);
+  const [includeTranslations, setIncludeTranslations] = useState(false);
+  const [selectedTranslations, setSelectedTranslations] = useState<string[]>([]);
+  const [selectedTafsirs, setSelectedTafsirs] = useState<string[]>([]);
+  const [embeddingsScopeTab, setEmbeddingsScopeTab] = useState<'ayahs' | 'translations' | 'tafsirs'>('ayahs');
+  const [embeddingsTransLang, setEmbeddingsTransLang] = useState('all');
+  const [embeddingsTransSearch, setEmbeddingsTransSearch] = useState('');
   const [translations, setTranslations] = useState<TranslationEdition[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [loading, setLoading] = useState(true);
   const [updatingMode, setUpdatingMode] = useState(false);
   const [triggeringJob, setTriggeringJob] = useState(false);
+  const [triggeringEmbeddings, setTriggeringEmbeddings] = useState(false);
   const [uploadR2, setUploadR2] = useState(true);
-  const [openaiApiKey, setOpenaiApiKey] = useState("");
+  const [embeddingsApiKey, setEmbeddingsApiKey] = useState("");
+  const [incrementalEmbeddings, setIncrementalEmbeddings] = useState(true);
   const [now, setNow] = useState(Date.now());
 
   const { toast } = useToast();
   const terminalEndRef = useRef<HTMLDivElement>(null);
+  const embeddingsTerminalEndRef = useRef<HTMLDivElement>(null);
 
   // Dynamic ticker interval hook for second-by-second duration display
   useEffect(() => {
@@ -102,6 +144,9 @@ export function QuranDataManagement() {
         setManifest(data.manifest);
         setDbStats(data.dbStats);
         setJobStatus(data.jobStatus);
+        if (data.embeddingsJobStatus) {
+          setEmbeddingsJobStatus(data.embeddingsJobStatus);
+        }
       }
     } catch (e) {
       console.error("Failed to fetch Qur'an data layer status:", e);
@@ -122,15 +167,28 @@ export function QuranDataManagement() {
     }
   };
 
+  const fetchEmbeddingsOptions = async () => {
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/quran/admin/embeddings/options`);
+      if (res.ok) {
+        const data = await res.json();
+        setEmbeddingsOptions(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch embeddings options:", e);
+    }
+  };
+
   useEffect(() => {
     fetchDataStatus();
     fetchTranslations();
+    fetchEmbeddingsOptions();
   }, []);
 
-  // Poll status while job is running
+  // Poll status while jobs are running
   useEffect(() => {
     let poll: NodeJS.Timeout | null = null;
-    if (jobStatus?.status === 'running') {
+    if (jobStatus?.status === 'running' || embeddingsJobStatus?.status === 'running') {
       poll = setInterval(() => {
         fetchDataStatus();
       }, 2000);
@@ -138,7 +196,7 @@ export function QuranDataManagement() {
     return () => {
       if (poll) clearInterval(poll);
     };
-  }, [jobStatus?.status]);
+  }, [jobStatus?.status, embeddingsJobStatus?.status]);
 
   // Auto scroll terminal logs
   useEffect(() => {
@@ -146,6 +204,12 @@ export function QuranDataManagement() {
       terminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [jobStatus?.logs]);
+
+  useEffect(() => {
+    if (embeddingsJobStatus?.logs && embeddingsTerminalEndRef.current) {
+      embeddingsTerminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [embeddingsJobStatus?.logs]);
 
   const handleProviderModeChange = async (newMode: 'quran-foundation' | 'local' | 'hybrid') => {
     setUpdatingMode(true);
@@ -189,8 +253,7 @@ export function QuranDataManagement() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           dryRun,
-          uploadR2,
-          apiKey: openaiApiKey ? openaiApiKey.trim() : undefined
+          uploadR2
         })
       });
 
@@ -199,7 +262,7 @@ export function QuranDataManagement() {
         setJobStatus(data.jobStatus);
         toast({
           title: "Canonical Qur'an Ingestion Initiated",
-          description: "114 Surahs, 6,236 Ayahs, R2 mirroring and pgvector chunking in progress."
+          description: "114 Surahs, 6,236 Ayahs, 117+ Translations, 12 Tafsirs, 49 Reciters syncing in background."
         });
       } else {
         const err = await res.json();
@@ -220,11 +283,125 @@ export function QuranDataManagement() {
     }
   };
 
+  const toggleTranslation = (editionKey: string) => {
+    setSelectedTranslations(prev => 
+      prev.includes(editionKey) ? prev.filter(k => k !== editionKey) : [...prev, editionKey]
+    );
+  };
+
+  const selectTopGlobalTranslations = () => {
+    if (!embeddingsOptions?.translations) return;
+    const topLangs = ['ur', 'fr', 'id', 'tr', 'es', 'ru', 'de'];
+    const matched = embeddingsOptions.translations
+      .filter(t => topLangs.includes(t.language?.toLowerCase()))
+      .map(t => t.editionKey);
+    setSelectedTranslations(Array.from(new Set([...selectedTranslations, ...matched])));
+    setIncludeTranslations(true);
+  };
+
+  const selectAllTranslations = () => {
+    if (!embeddingsOptions?.translations) return;
+    setSelectedTranslations(embeddingsOptions.translations.map(t => t.editionKey));
+    setIncludeTranslations(true);
+  };
+
+  const clearSelectedTranslations = () => {
+    setSelectedTranslations([]);
+  };
+
+  const toggleTafsir = (id: string) => {
+    setSelectedTafsirs(prev => 
+      prev.includes(id) ? prev.filter(k => k !== id) : [...prev, id]
+    );
+  };
+
+  const selectAllTafsirs = () => {
+    if (!embeddingsOptions?.tafsirs) return;
+    setSelectedTafsirs(embeddingsOptions.tafsirs.map(t => t.id));
+    setIncludeTafsirs(true);
+  };
+
+  const clearSelectedTafsirs = () => {
+    setSelectedTafsirs([]);
+  };
+
+  const handleTriggerEmbeddings = async () => {
+    if (!embeddingsApiKey.trim()) {
+      toast({
+        variant: "destructive",
+        title: "OpenAI API Key Required",
+        description: "Please enter your OpenAI API key to generate semantic embeddings."
+      });
+      return;
+    }
+
+    const targetTypes: ('ayah' | 'translation' | 'tafsir')[] = [];
+    if (includeAyahs) targetTypes.push('ayah');
+    if (includeTranslations && selectedTranslations.length > 0) targetTypes.push('translation');
+    if (includeTafsirs && selectedTafsirs.length > 0) targetTypes.push('tafsir');
+
+    if (targetTypes.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No Target Selected",
+        description: "Please select at least one embedding target (Canonical Ayahs, Translations, or Tafsirs)."
+      });
+      return;
+    }
+
+    setTriggeringEmbeddings(true);
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/quran/admin/embeddings/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: embeddingsApiKey.trim(),
+          targetTypes,
+          selectedTranslations,
+          selectedTafsirs,
+          incrementalOnly: incrementalEmbeddings,
+          batchSize: 50
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setEmbeddingsJobStatus(data.embeddingsJobStatus);
+        toast({
+          title: "QurAI Embeddings Generation Initiated",
+          description: `Dense vector embeddings for ${targetTypes.join(', ')} are being generated in background.`
+        });
+      } else {
+        const err = await res.json();
+        toast({
+          variant: "destructive",
+          title: "Generation Failed",
+          description: err.error || "Failed to start embeddings generator."
+        });
+      }
+    } catch (e: any) {
+      toast({
+        variant: "destructive",
+        title: "Network Error",
+        description: e.message || "Failed to trigger embeddings."
+      });
+    } finally {
+      setTriggeringEmbeddings(false);
+    }
+  };
+
   // Calculate live dynamic ticker duration (seconds)
   const getElapsedSeconds = () => {
     if (!jobStatus?.startTime) return 0;
     const start = new Date(jobStatus.startTime).getTime();
     const end = jobStatus.endTime ? new Date(jobStatus.endTime).getTime() : now;
+    return Math.max(0, Math.floor((end - start) / 1000));
+  };
+
+  const getEmbeddingsElapsedSeconds = () => {
+    if (!embeddingsJobStatus?.startTime) return 0;
+    const start = new Date(embeddingsJobStatus.startTime).getTime();
+    const end = embeddingsJobStatus.endTime ? new Date(embeddingsJobStatus.endTime).getTime() : now;
     return Math.max(0, Math.floor((end - start) / 1000));
   };
 
@@ -397,17 +574,17 @@ export function QuranDataManagement() {
         </Card>
       </div>
 
-      {/* Grid Row 2: Ingestion, Cloudflare R2 & Embeddings Trigger Panel */}
+      {/* Grid Row 2: Ingestion & R2 Mirroring Panel */}
       <Card className="bg-card/50 border-border/60 backdrop-blur-md">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
                 <Terminal className="w-5 h-5 text-emerald-500" />
-                <CardTitle className="text-lg font-semibold text-foreground font-display">Canonical Qur'an Ingestion & R2 Mirroring Worker</CardTitle>
+                <CardTitle className="text-lg font-semibold text-foreground font-display">Canonical Qur'an Ingestion & Cloud Mirroring</CardTitle>
               </div>
               <CardDescription className="text-muted-foreground text-xs mt-1">
-                Fetches all 114 Surahs & 6,236 Ayahs, performs 3-way cross-validation, populates PostgreSQL, and exports JSON structures to Cloudflare R2.
+                Synchronizes authentic 114 Surahs, 6,236 Ayahs, 117+ Translations, 12 Classical Tafsirs, 49 Reciters, and exports pre-rendered JSON files to Cloudflare R2.
               </CardDescription>
             </div>
 
@@ -436,8 +613,8 @@ export function QuranDataManagement() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Options: R2 Upload & OpenAI Key Override */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3.5 rounded-xl bg-muted/30 border border-border/60 text-xs">
+          {/* Option: R2 Upload */}
+          <div className="p-3.5 rounded-xl bg-muted/30 border border-border/60 text-xs">
             <div className="flex items-start gap-2.5">
               <input
                 type="checkbox"
@@ -450,37 +627,16 @@ export function QuranDataManagement() {
               <label htmlFor="quranR2UploadCheckbox" className="text-foreground cursor-pointer select-none">
                 <span className="font-semibold flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                   <Cloud className="w-3.5 h-3.5" />
-                  Mirror Pre-rendered JSON to Cloudflare R2
+                  Mirror Pre-rendered JSON to Cloudflare R2 Edge Storage
                 </span>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Pre-renders and uploads canonical JSON files (<code className="font-mono text-emerald-600 dark:text-emerald-300">chapters/</code>, <code className="font-mono text-emerald-600 dark:text-emerald-300">pages/</code>, <code className="font-mono text-emerald-600 dark:text-emerald-300">recitations/</code>) to R2 bucket for sub-30ms edge delivery.
+                  Pre-renders and uploads canonical JSON bundles (<code className="font-mono text-emerald-600 dark:text-emerald-300">chapters/</code>, <code className="font-mono text-emerald-600 dark:text-emerald-300">pages/</code>, <code className="font-mono text-emerald-600 dark:text-emerald-300">recitations/</code>, <code className="font-mono text-emerald-600 dark:text-emerald-300">translations/</code>) for sub-30ms global edge delivery.
                 </p>
               </label>
             </div>
-
-            <div className="space-y-1.5">
-              <label className="text-foreground font-semibold flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-foreground">
-                  <Key className="w-3.5 h-3.5 text-emerald-500" />
-                  OpenAI API Key (Dynamic Override)
-                </span>
-                <span className="text-[10px] text-muted-foreground">Optional</span>
-              </label>
-              <Input
-                type="password"
-                value={openaiApiKey}
-                onChange={(e) => setOpenaiApiKey(e.target.value)}
-                placeholder="sk-proj-... (Uses server .env if left blank)"
-                disabled={triggeringJob || jobStatus?.status === 'running'}
-                className="bg-background border-input text-xs font-mono text-foreground"
-              />
-              <p className="text-[10px] text-muted-foreground">
-                Generates dense vector embeddings (<code className="text-emerald-600 dark:text-emerald-300 font-mono">text-embedding-3-small</code>) for all 6,236 Ayahs in <code className="text-emerald-600 dark:text-emerald-300 font-mono">quran_retrieval_chunks</code>.
-              </p>
-            </div>
           </div>
 
-          {/* Job Progress Banner & Second-by-Second Ticker */}
+          {/* Ingestion Progress Banner */}
           <div className="flex flex-wrap items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/60 text-xs">
             <div className="flex items-center gap-3">
               <Badge
@@ -511,8 +667,8 @@ export function QuranDataManagement() {
             )}
           </div>
 
-          {/* Terminal Console Logs */}
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 max-h-56 overflow-y-auto space-y-1">
+          {/* Ingestion Console Logs */}
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 max-h-48 overflow-y-auto space-y-1">
             {jobStatus?.logs && jobStatus.logs.length > 0 ? (
               jobStatus.logs.map((log, idx) => (
                 <div key={idx} className="flex items-start gap-2">
@@ -521,9 +677,489 @@ export function QuranDataManagement() {
                 </div>
               ))
             ) : (
-              <div className="text-slate-600 italic">No pipeline logs available. Click 'Trigger Canonical Ingestion' to start.</div>
+              <div className="text-slate-600 italic">No ingestion logs. Click 'Trigger Canonical Ingestion' to start.</div>
             )}
             <div ref={terminalEndRef} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Grid Row 2.5: Dedicated QurAI Semantic Embeddings & pgvector Indexing Panel */}
+      <Card className="bg-card/50 border-emerald-500/30 backdrop-blur-md">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-500" />
+                <CardTitle className="text-lg font-semibold text-foreground font-display">QurAI Semantic Embeddings & pgvector Indexer</CardTitle>
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 font-mono text-[11px]">
+                  text-embedding-3-small
+                </Badge>
+              </div>
+              <CardDescription className="text-muted-foreground text-xs mt-1">
+                Generates 1536-dimensional dense vector embeddings for Canonical Ayahs, Multi-Lingual Translations, and Classical Tafsirs for semantic RAG search.
+              </CardDescription>
+            </div>
+
+            <Button
+              onClick={handleTriggerEmbeddings}
+              disabled={triggeringEmbeddings || embeddingsJobStatus?.status === 'running'}
+              className="bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shrink-0"
+            >
+              {triggeringEmbeddings || embeddingsJobStatus?.status === 'running' ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4 mr-2 fill-current" />
+              )}
+              Generate Semantic Embeddings
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Target Scope Checkboxes */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3.5 rounded-xl bg-muted/30 border border-border/60 text-xs">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={includeAyahs}
+                onChange={(e) => setIncludeAyahs(e.target.checked)}
+                disabled={triggeringEmbeddings || embeddingsJobStatus?.status === 'running'}
+                className="rounded border-border text-amber-500 focus:ring-amber-500"
+              />
+              <div>
+                <span className="font-semibold text-foreground flex items-center gap-1">
+                  <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+                  Canonical Ayahs (6,236)
+                </span>
+                <span className="text-[10px] text-muted-foreground">Arabic Uthmani + Khattab English</span>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={includeTranslations}
+                onChange={(e) => setIncludeTranslations(e.target.checked)}
+                disabled={triggeringEmbeddings || embeddingsJobStatus?.status === 'running'}
+                className="rounded border-border text-amber-500 focus:ring-amber-500"
+              />
+              <div>
+                <span className="font-semibold text-foreground flex items-center gap-1">
+                  <Globe className="w-3.5 h-3.5 text-amber-500" />
+                  Translations ({selectedTranslations.length} selected)
+                </span>
+                <span className="text-[10px] text-muted-foreground">Select any language / edition</span>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={includeTafsirs}
+                onChange={(e) => setIncludeTafsirs(e.target.checked)}
+                disabled={triggeringEmbeddings || embeddingsJobStatus?.status === 'running'}
+                className="rounded border-border text-amber-500 focus:ring-amber-500"
+              />
+              <div>
+                <span className="font-semibold text-foreground flex items-center gap-1">
+                  <FileText className="w-3.5 h-3.5 text-amber-500" />
+                  Classical Tafsirs ({selectedTafsirs.length} selected)
+                </span>
+                <span className="text-[10px] text-muted-foreground">12 Classical Scholarly Works</span>
+              </div>
+            </label>
+          </div>
+
+          {/* Interactive Multi-Source Configuration Tabs */}
+          <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-border/60 pb-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEmbeddingsScopeTab('ayahs')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    embeddingsScopeTab === 'ayahs'
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  📖 Canonical Ayahs ({embeddingsOptions?.ayahs.embedded || 0}/6,236)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEmbeddingsScopeTab('translations')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    embeddingsScopeTab === 'translations'
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  🌐 Multi-Lingual Translations ({selectedTranslations.length}/{embeddingsOptions?.translations.length || 120})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEmbeddingsScopeTab('tafsirs')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    embeddingsScopeTab === 'tafsirs'
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  📜 Classical Tafsirs ({selectedTafsirs.length}/{embeddingsOptions?.tafsirs.length || 12})
+                </button>
+              </div>
+
+              {embeddingsScopeTab === 'translations' && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={selectTopGlobalTranslations}
+                    className="h-7 text-[11px] border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                  >
+                    ⭐ Select Top Global (UR, FR, ID, TR, ES, RU, DE)
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={selectAllTranslations}
+                    className="h-7 text-[11px]"
+                  >
+                    Select All (120)
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={clearSelectedTranslations}
+                    className="h-7 text-[11px] text-muted-foreground"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              )}
+
+              {embeddingsScopeTab === 'tafsirs' && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={selectAllTafsirs}
+                    className="h-7 text-[11px]"
+                  >
+                    Select All (12)
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={clearSelectedTafsirs}
+                    className="h-7 text-[11px] text-muted-foreground"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* TAB CONTENT 1: CANONICAL AYAHS */}
+            {embeddingsScopeTab === 'ayahs' && (
+              <div className="p-3 bg-background/50 rounded-lg border border-border/50 text-xs flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-foreground">Canonical 6,236 Qur'anic Ayahs (Core Corpus)</div>
+                  <div className="text-muted-foreground text-[11px]">Includes Arabic Uthmani text + normalized search tokens + Dr. Mustafa Khattab & Sahih International English translation context.</div>
+                </div>
+                <Badge variant="outline" className="font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                  {embeddingsOptions?.ayahs.embedded || 0} / 6,236 Indexed
+                </Badge>
+              </div>
+            )}
+
+            {/* TAB CONTENT 2: MULTI-LINGUAL TRANSLATIONS */}
+            {embeddingsScopeTab === 'translations' && (
+              <div className="space-y-3">
+                {/* Search & Language Filters */}
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <div className="relative flex-1 w-full">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search translation by name, language, or translator..."
+                      value={embeddingsTransSearch}
+                      onChange={(e) => setEmbeddingsTransSearch(e.target.value)}
+                      className="pl-8 h-8 text-xs bg-background border-border"
+                    />
+                  </div>
+
+                  {/* Language Pills */}
+                  {(() => {
+                    const transList = embeddingsOptions?.translations || [];
+                    const langs = Array.from(new Set(transList.map(t => t.language?.toLowerCase()))).sort();
+                    return (
+                      <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1">
+                        <button
+                          type="button"
+                          onClick={() => setEmbeddingsTransLang('all')}
+                          className={`px-2 py-0.5 rounded text-[11px] font-medium shrink-0 transition-colors ${
+                            embeddingsTransLang === 'all'
+                              ? 'bg-foreground text-background font-semibold'
+                              : 'bg-muted/60 text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          All ({transList.length})
+                        </button>
+                        {langs.slice(0, 10).map((lng) => {
+                          const count = transList.filter(t => t.language?.toLowerCase() === lng).length;
+                          return (
+                            <button
+                              key={lng}
+                              type="button"
+                              onClick={() => setEmbeddingsTransLang(lng)}
+                              className={`px-2 py-0.5 rounded text-[11px] uppercase font-mono font-medium shrink-0 transition-colors ${
+                                embeddingsTransLang === lng
+                                  ? 'bg-amber-500 text-white font-semibold'
+                                  : 'bg-muted/60 text-muted-foreground hover:text-foreground'
+                              }`}
+                            >
+                              {lng} ({count})
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Translation List Table */}
+                <div className="max-h-60 overflow-y-auto rounded-lg border border-border/50 bg-background/50 text-xs">
+                  <table className="w-full text-left">
+                    <thead className="sticky top-0 bg-muted/90 backdrop-blur-sm text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                      <tr>
+                        <th className="p-2.5 w-10 text-center">Select</th>
+                        <th className="p-2.5">Edition Name</th>
+                        <th className="p-2.5">Language</th>
+                        <th className="p-2.5">Translator / Author</th>
+                        <th className="p-2.5 text-right">Vectors Indexed</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {(() => {
+                        const list = embeddingsOptions?.translations || [];
+                        const filtered = list.filter(item => {
+                          const q = embeddingsTransSearch.toLowerCase().trim();
+                          const matchesQuery = !q || item.name?.toLowerCase().includes(q) || item.editionKey?.toLowerCase().includes(q) || item.author?.toLowerCase().includes(q) || item.language?.toLowerCase().includes(q);
+                          const matchesLang = embeddingsTransLang === 'all' || item.language?.toLowerCase() === embeddingsTransLang.toLowerCase();
+                          return matchesQuery && matchesLang;
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={5} className="p-4 text-center text-muted-foreground italic">
+                                No translations match your search.
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        return filtered.map((item) => {
+                          const isChecked = selectedTranslations.includes(item.editionKey);
+                          return (
+                            <tr
+                              key={item.editionKey}
+                              onClick={() => toggleTranslation(item.editionKey)}
+                              className={`cursor-pointer transition-colors ${
+                                isChecked ? 'bg-amber-500/10 font-medium' : 'hover:bg-muted/30'
+                              }`}
+                            >
+                              <td className="p-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleTranslation(item.editionKey)}
+                                  className="rounded border-border text-amber-500 focus:ring-amber-500"
+                                />
+                              </td>
+                              <td className="p-2.5 text-foreground font-semibold">
+                                {item.name}
+                                <span className="ml-2 font-mono text-[10px] text-muted-foreground">{item.editionKey}</span>
+                              </td>
+                              <td className="p-2.5">
+                                <Badge variant="secondary" className="uppercase font-mono text-[10px]">
+                                  {item.language}
+                                </Badge>
+                              </td>
+                              <td className="p-2.5 text-muted-foreground">{item.author || 'Scholarly Translation'}</td>
+                              <td className="p-2.5 text-right">
+                                {item.embeddedCount > 0 ? (
+                                  <Badge variant="outline" className="font-mono text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                                    {item.embeddedCount} / 6,236 Indexed
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground">
+                                    0 / 6,236
+                                  </Badge>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* TAB CONTENT 3: CLASSICAL TAFSIRS */}
+            {embeddingsScopeTab === 'tafsirs' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
+                {(() => {
+                  const tafsirsList = embeddingsOptions?.tafsirs || [
+                    { id: 'ar.ibnkathir', name: 'تفسير ابن كثير', language: 'ar', author: 'Ibn Kathir (d. 774H)', totalPassages: 6236, embeddedCount: 0, isEmbedded: false },
+                    { id: 'ar.saadi', name: 'تيسير الكريم الرحمن (السعدي)', language: 'ar', author: "Abdur-Rahman as-Sa'di", totalPassages: 6236, embeddedCount: 0, isEmbedded: false },
+                    { id: 'ar.jalalayn', name: 'تفسير الجلالين', language: 'ar', author: 'Al-Mahalli & Al-Suyuti', totalPassages: 6236, embeddedCount: 0, isEmbedded: false },
+                    { id: 'ar.muyassar', name: 'التفسير الميسر', language: 'ar', author: 'King Fahd Complex (KFGQPC)', totalPassages: 6236, embeddedCount: 0, isEmbedded: false },
+                    { id: 'ar.qurtubi', name: 'الجامع لأحكام القرآن (القرطبي)', language: 'ar', author: 'Imam Al-Qurtubi', totalPassages: 6236, embeddedCount: 0, isEmbedded: false },
+                    { id: 'ar.tabari', name: 'جامع البيان (الطبري)', language: 'ar', author: 'Imam Al-Tabari', totalPassages: 6236, embeddedCount: 0, isEmbedded: false },
+                    { id: 'en.ibnkathir', name: 'Tafsir Ibn Kathir (English)', language: 'en', author: 'Darussalam', totalPassages: 6236, embeddedCount: 0, isEmbedded: false },
+                    { id: 'en.jalalayn', name: 'Tafsir Al-Jalalayn (English)', language: 'en', author: 'Feras Hamza', totalPassages: 6236, embeddedCount: 0, isEmbedded: false },
+                    { id: 'en.saadi', name: "Tafsir As-Sa'di (English)", language: 'en', author: 'IIPH', totalPassages: 6236, embeddedCount: 0, isEmbedded: false },
+                    { id: 'ur.maududi', name: 'تفہیم القرآن (مودودی)', language: 'ur', author: "Syed Abul A'la Maududi", totalPassages: 6236, embeddedCount: 0, isEmbedded: false }
+                  ];
+
+                  return tafsirsList.map((t) => {
+                    const isChecked = selectedTafsirs.includes(t.id);
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => toggleTafsir(t.id)}
+                        className={`p-3 rounded-lg border text-xs cursor-pointer transition-all ${
+                          isChecked
+                            ? 'bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30'
+                            : 'bg-background/50 border-border/50 hover:border-border hover:bg-muted/30'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleTafsir(t.id)}
+                            className="mt-0.5 rounded border-border text-amber-500 focus:ring-amber-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-foreground truncate">{t.name}</div>
+                            <div className="text-[11px] text-muted-foreground truncate">{t.author}</div>
+                            <div className="flex items-center justify-between mt-2">
+                              <Badge variant="secondary" className="uppercase font-mono text-[9px]">
+                                {t.language}
+                              </Badge>
+                              {t.embeddedCount > 0 ? (
+                                <Badge variant="outline" className="font-mono text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                                  {t.embeddedCount} Indexed
+                                </Badge>
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground font-mono">Not Indexed</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            )}
+          </div>
+
+          {/* Options: API Key & Incremental Toggle */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3.5 rounded-xl bg-muted/30 border border-border/60 text-xs">
+            <div className="space-y-1.5">
+              <label className="text-foreground font-semibold flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-foreground">
+                  <Key className="w-3.5 h-3.5 text-amber-500" />
+                  OpenAI API Key
+                </span>
+                <span className="text-[10px] text-amber-500 font-medium">Required for Vectors</span>
+              </label>
+              <Input
+                type="password"
+                value={embeddingsApiKey}
+                onChange={(e) => setEmbeddingsApiKey(e.target.value)}
+                placeholder="sk-proj-..."
+                disabled={triggeringEmbeddings || embeddingsJobStatus?.status === 'running'}
+                className="bg-background border-input text-xs font-mono text-foreground"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Uses 1536-dimensional cosine vectors with OpenAI <code className="font-mono text-amber-500">text-embedding-3-small</code>.
+              </p>
+            </div>
+
+            <div className="flex items-start gap-2.5 pt-1">
+              <input
+                type="checkbox"
+                id="incrementalEmbeddingsCheckbox"
+                checked={incrementalEmbeddings}
+                onChange={(e) => setIncrementalEmbeddings(e.target.checked)}
+                disabled={triggeringEmbeddings || embeddingsJobStatus?.status === 'running'}
+                className="mt-0.5 rounded border-border text-amber-500 focus:ring-amber-500"
+              />
+              <label htmlFor="incrementalEmbeddingsCheckbox" className="text-foreground cursor-pointer select-none">
+                <span className="font-semibold text-foreground">Incremental Mode (Index Missing Only)</span>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Only generates embeddings for chunks where <code className="font-mono text-amber-500">embedding IS NULL</code>. Uncheck to regenerate and re-index.
+                </p>
+              </label>
+            </div>
+          </div>
+
+          {/* Embeddings Progress Banner */}
+          <div className="flex flex-wrap items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/60 text-xs">
+            <div className="flex items-center gap-3">
+              <Badge
+                variant="outline"
+                className={
+                  embeddingsJobStatus?.status === 'running'
+                    ? 'bg-amber-500/10 text-amber-500 border-amber-500/30 animate-pulse'
+                    : embeddingsJobStatus?.status === 'completed'
+                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                      : embeddingsJobStatus?.status === 'failed'
+                        ? 'bg-rose-500/10 text-rose-500 border-rose-500/30'
+                        : 'bg-muted text-muted-foreground'
+                }
+              >
+                Status: {embeddingsJobStatus?.status ? embeddingsJobStatus.status.toUpperCase() : 'IDLE'}
+              </Badge>
+
+              <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
+                Active Chunks: {dbStats?.totalChunks || 6236} | Embedded: {dbStats?.totalEmbedded || 0}
+              </Badge>
+
+              <div className="flex items-center gap-1.5 text-muted-foreground font-mono">
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                <span>Elapsed: {getEmbeddingsElapsedSeconds()}s</span>
+              </div>
+            </div>
+
+            {embeddingsJobStatus?.status === 'running' && (
+              <div className="text-amber-500 font-mono font-medium">
+                {embeddingsJobStatus.progress}% Complete
+              </div>
+            )}
+          </div>
+
+          {/* Embeddings Terminal Console Logs */}
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 max-h-48 overflow-y-auto space-y-1">
+            {embeddingsJobStatus?.logs && embeddingsJobStatus.logs.length > 0 ? (
+              embeddingsJobStatus.logs.map((log, idx) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <span className="text-amber-500 select-none">&gt;</span>
+                  <span>{log}</span>
+                </div>
+              ))
+            ) : (
+              <div className="text-slate-600 italic">No embedding generation logs. Select targets and click 'Generate Semantic Embeddings' to start vectorization.</div>
+            )}
+            <div ref={embeddingsTerminalEndRef} />
           </div>
         </CardContent>
       </Card>
