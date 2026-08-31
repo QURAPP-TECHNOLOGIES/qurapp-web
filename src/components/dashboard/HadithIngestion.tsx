@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   Library,
   GitBranch,
-  Info
+  Info,
+  Key
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,6 +147,18 @@ export function HadithIngestion() {
   const [datasetVersion, setDatasetVersion] = useState("2026.08-rev1");
   const [isDryRun, setIsDryRun] = useState(false);
 
+  // Phase 9: Vector Indexing & Embeddings State
+  const [indexingStatus, setIndexingStatus] = useState<{
+    totalChunks: number;
+    totalHadiths: number;
+    indexedHadiths: number;
+    indexingProgressPercent: string;
+  } | null>(null);
+  const [startingIndexing, setStartingIndexing] = useState(false);
+  const [indexingCollection, setIndexingCollection] = useState("all");
+  const [incrementalOnly, setIncrementalOnly] = useState(true);
+  const [openaiApiKey, setOpenaiApiKey] = useState("");
+
   const { toast } = useToast();
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -162,6 +175,52 @@ export function HadithIngestion() {
       console.error("Failed to fetch Hadith DB stats", e);
     } finally {
       setLoadingStats(false);
+    }
+  };
+
+  const fetchIndexingStatus = async () => {
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/knowledge/hadith/indexing/status`);
+      if (res.ok) {
+        const data = await res.json();
+        setIndexingStatus(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch Hadith indexing status", e);
+    }
+  };
+
+  const handleStartIndexing = async () => {
+    setStartingIndexing(true);
+    try {
+      const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/knowledge/hadith/indexing/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          collectionId: indexingCollection,
+          incrementalOnly,
+          apiKey: openaiApiKey ? openaiApiKey.trim() : undefined,
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Indexing Job Started",
+          description: `Generating pgvector retrieval chunks for ${indexingCollection === 'all' ? 'all collections' : indexingCollection}...`,
+        });
+        fetchIndexingStatus();
+      } else {
+        const data = await res.json();
+        throw new Error(data?.message || "Failed to start Hadith indexing.");
+      }
+    } catch (e: any) {
+      toast({
+        title: "Indexing Failed",
+        description: e.message || String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setStartingIndexing(false);
     }
   };
 
@@ -184,10 +243,12 @@ export function HadithIngestion() {
   useEffect(() => {
     fetchDbStats();
     fetchJobStatus();
+    fetchIndexingStatus();
 
     pollTimerRef.current = setInterval(() => {
       fetchJobStatus();
-    }, 2000);
+      fetchIndexingStatus();
+    }, 2500);
 
     return () => {
       if (pollTimerRef.current) {
@@ -199,6 +260,7 @@ export function HadithIngestion() {
   useEffect(() => {
     if (status && (status.status === 'completed' || status.status === 'failed')) {
       fetchDbStats();
+      fetchIndexingStatus();
     }
   }, [status?.status]);
 
@@ -260,7 +322,7 @@ export function HadithIngestion() {
         <div>
           <h2 className="text-2xl font-bold text-foreground font-display flex items-center gap-2">
             <Database className="h-6 w-6 text-primary" />
-            Hadith Corpus & Ingestion Manager (Phase 9A.5)
+            Hadith Corpus & Ingestion Manager
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             Primary acquisition via <span className="font-semibold text-primary">quranlab/hadith</span> with immutable version pinning, upstream lineage tracing, and direct Cloudflare R2 / PostgreSQL persistence.
@@ -479,6 +541,108 @@ export function HadithIngestion() {
                     <Play className="h-4 w-4 fill-current" />
                   )}
                   {isDryRun ? "Execute Validation Dry-Run" : "Publish to Canonical Corpus"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Phase 9: Vector Indexing & Embeddings Card */}
+          <Card className="border-border/60 shadow-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                Derived pgvector Indexing & Embeddings (Phase 9)
+              </CardTitle>
+              <CardDescription>
+                Derive semantic embeddings and multi-source retrieval chunks from canonical Hadiths.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Library className="h-3.5 w-3.5 text-primary" />
+                  Target Collection to Index
+                </label>
+                <select
+                  value={indexingCollection}
+                  onChange={(e) => setIndexingCollection(e.target.value)}
+                  disabled={startingIndexing}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                >
+                  <option value="all">All Canonical Collections (Incremental Sweep)</option>
+                  {COLLECTIONS_LIST.filter(c => c.id !== 'all').map((col) => (
+                    <option key={col.id} value={col.id}>
+                      {col.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="incrementalCheckbox"
+                  checked={incrementalOnly}
+                  onChange={(e) => setIncrementalOnly(e.target.checked)}
+                  disabled={startingIndexing}
+                  className="rounded border-input text-primary focus:ring-primary"
+                />
+                <label htmlFor="incrementalCheckbox" className="text-xs text-muted-foreground cursor-pointer">
+                  Incremental Only (skip already indexed records to save API tokens)
+                </label>
+              </div>
+
+              {indexingStatus && (
+                <div className="bg-muted/20 p-3 rounded-lg border text-xs space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Indexed Hadiths:</span>
+                    <span className="font-semibold">{indexingStatus.indexedHadiths.toLocaleString()} / {indexingStatus.totalHadiths.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Generated Retrieval Chunks:</span>
+                    <span className="font-semibold text-primary">{indexingStatus.totalChunks.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Index Coverage:</span>
+                    <span className="font-semibold text-emerald-500">{indexingStatus.indexingProgressPercent}%</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Key className="h-3.5 w-3.5 text-primary" />
+                    OpenAI API Key (Dynamic Override)
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">Optional</span>
+                </label>
+                <Input
+                  type="password"
+                  value={openaiApiKey}
+                  onChange={(e) => setOpenaiApiKey(e.target.value)}
+                  placeholder="sk-proj-... (Uses server .env if left blank)"
+                  disabled={startingIndexing}
+                  className="bg-muted/30 text-xs font-mono"
+                />
+                <p className="text-[11px] text-muted-foreground leading-tight">
+                  Passes your API key securely to generate dense vector embeddings (<code className="text-primary font-mono">text-embedding-3-small</code>) dynamically without modifying server configuration files.
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  onClick={handleStartIndexing}
+                  disabled={startingIndexing}
+                  variant="secondary"
+                  className="w-full gap-2 font-semibold shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-transform"
+                >
+                  {startingIndexing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Layers className="h-4 w-4 text-primary" />
+                  )}
+                  Trigger Retrieval Indexing
                 </Button>
               </div>
             </CardContent>
