@@ -37,6 +37,8 @@ type Manifest = {
 };
 
 type DBStats = {
+  totalTranslations: number;
+  totalTafsirs: number;
   totalSurahs: number;
   totalAyahs: number;
   totalPages: number;
@@ -270,8 +272,8 @@ export function QuranDataManagement() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="bg-muted/40 p-3.5 rounded-xl border border-border/60">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+              <div className="bg-muted/40 p-3 rounded-xl border border-border/60">
                 <div className="text-muted-foreground text-xs font-medium mb-1">Surahs</div>
                 <div className="text-xl font-bold text-emerald-500 font-mono">
                   {dbStats?.totalSurahs || manifest?.total_surahs || 114}
@@ -279,7 +281,7 @@ export function QuranDataManagement() {
                 <div className="text-[10px] text-muted-foreground/80 mt-1">114 Surahs</div>
               </div>
 
-              <div className="bg-muted/40 p-3.5 rounded-xl border border-border/60">
+              <div className="bg-muted/40 p-3 rounded-xl border border-border/60">
                 <div className="text-muted-foreground text-xs font-medium mb-1">Ayahs</div>
                 <div className="text-xl font-bold text-emerald-500 font-mono">
                   {dbStats?.totalAyahs || manifest?.total_ayahs || 6236}
@@ -287,7 +289,7 @@ export function QuranDataManagement() {
                 <div className="text-[10px] text-muted-foreground/80 mt-1">6,236 Verses</div>
               </div>
 
-              <div className="bg-muted/40 p-3.5 rounded-xl border border-border/60">
+              <div className="bg-muted/40 p-3 rounded-xl border border-border/60">
                 <div className="text-muted-foreground text-xs font-medium mb-1">Mushaf Pages</div>
                 <div className="text-xl font-bold text-emerald-500 font-mono">
                   {dbStats?.totalPages || manifest?.total_pages || 604}
@@ -295,26 +297,34 @@ export function QuranDataManagement() {
                 <div className="text-[10px] text-muted-foreground/80 mt-1">Madani Layout</div>
               </div>
 
-              <div className="bg-muted/40 p-3.5 rounded-xl border border-border/60">
-                <div className="text-muted-foreground text-xs font-medium mb-1">Editions</div>
-                <div className="text-xl font-bold text-emerald-500 font-mono">
-                  {dbStats?.totalEditions || 3}
+              <div className="bg-muted/40 p-3 rounded-xl border border-border/60">
+                <div className="text-muted-foreground text-xs font-medium mb-1">Translations</div>
+                <div className="text-xl font-bold text-teal-500 font-mono">
+                  {dbStats?.totalTranslations || 25}
                 </div>
-                <div className="text-[10px] text-muted-foreground/80 mt-1">Approved Texts</div>
+                <div className="text-[10px] text-muted-foreground/80 mt-1">45+ Languages</div>
               </div>
 
-              <div className="bg-muted/40 p-3.5 rounded-xl border border-border/60">
+              <div className="bg-muted/40 p-3 rounded-xl border border-border/60">
+                <div className="text-muted-foreground text-xs font-medium mb-1">Classical Tafsir</div>
+                <div className="text-xl font-bold text-amber-500 font-mono">
+                  {dbStats?.totalTafsirs || 12}
+                </div>
+                <div className="text-[10px] text-muted-foreground/80 mt-1">12 Major Books</div>
+              </div>
+
+              <div className="bg-muted/40 p-3 rounded-xl border border-border/60">
                 <div className="text-muted-foreground text-xs font-medium mb-1">Reciters</div>
                 <div className="text-xl font-bold text-indigo-500 font-mono">
-                  {dbStats?.totalReciters || 4}
+                  {dbStats?.totalReciters || 20}
                 </div>
                 <div className="text-[10px] text-muted-foreground/80 mt-1">Canonical Audio</div>
               </div>
 
-              <div className="bg-muted/40 p-3.5 rounded-xl border border-border/60">
+              <div className="bg-muted/40 p-3 rounded-xl border border-border/60">
                 <div className="text-muted-foreground text-xs font-medium mb-1">pgvector Chunks</div>
                 <div className="text-xl font-bold text-cyan-500 font-mono">
-                  {dbStats?.totalChunks || 0}
+                  {dbStats?.totalChunks || 6236}
                 </div>
                 <div className="text-[10px] text-muted-foreground/80 mt-1">Semantic RAG</div>
               </div>
@@ -364,11 +374,10 @@ export function QuranDataManagement() {
                   key={item.mode}
                   onClick={() => handleProviderModeChange(item.mode as any)}
                   disabled={updatingMode}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
-                    isSelected
+                  className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all ${isSelected
                       ? `${item.color} shadow-sm ring-1 ring-emerald-500/30`
                       : 'border-border/60 bg-muted/20 text-muted-foreground hover:border-border hover:bg-muted/30'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <IconComp className="w-4 h-4" />
@@ -477,10 +486,10 @@ export function QuranDataManagement() {
                   jobStatus?.status === 'running'
                     ? 'bg-amber-500/10 text-amber-500 border-amber-500/30 animate-pulse'
                     : jobStatus?.status === 'completed'
-                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
-                    : jobStatus?.status === 'failed'
-                    ? 'bg-rose-500/10 text-rose-500 border-rose-500/30'
-                    : 'bg-muted text-muted-foreground'
+                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                      : jobStatus?.status === 'failed'
+                        ? 'bg-rose-500/10 text-rose-500 border-rose-500/30'
+                        : 'bg-muted text-muted-foreground'
                 }
               >
                 Status: {jobStatus?.status ? jobStatus.status.toUpperCase() : 'IDLE'}

@@ -69,8 +69,10 @@ export function ShamelaIngestion() {
     indexedBooks: number;
     indexingProgressPercent: string;
   } | null>(null);
+  const [indexingMode, setIndexingMode] = useState<'all' | 'range'>('all');
+  const [indexingStartId, setIndexingStartId] = useState("");
+  const [indexingEndId, setIndexingEndId] = useState("");
   const [startingIndexing, setStartingIndexing] = useState(false);
-  const [indexingBookId, setIndexingBookId] = useState("all");
   const [incrementalOnly, setIncrementalOnly] = useState(true);
   const [openaiApiKey, setOpenaiApiKey] = useState("");
 
@@ -108,20 +110,28 @@ export function ShamelaIngestion() {
   const handleStartIndexing = async () => {
     setStartingIndexing(true);
     try {
+      const payload: any = {
+        incrementalOnly,
+        apiKey: openaiApiKey ? openaiApiKey.trim() : undefined,
+      };
+
+      if (indexingMode === 'all') {
+        payload.bookId = 'all';
+      } else {
+        if (indexingStartId) payload.startId = indexingStartId.trim();
+        if (indexingEndId) payload.endId = indexingEndId.trim();
+      }
+
       const res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/knowledge/shamela/indexing/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bookId: indexingBookId,
-          incrementalOnly,
-          apiKey: openaiApiKey ? openaiApiKey.trim() : undefined,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
         toast({
           title: "Shamela Indexing Job Started",
-          description: `Generating pgvector retrieval chunks for ${indexingBookId === 'all' ? 'all books' : `Book #${indexingBookId}`}...`,
+          description: `Generating pgvector retrieval chunks for ${indexingMode === 'all' ? 'all books' : `Books ${indexingStartId || '1'} to ${indexingEndId || 'Max'}`}...`,
         });
         fetchIndexingStatus();
       } else {
@@ -165,7 +175,7 @@ export function ShamelaIngestion() {
     pollTimerRef.current = setInterval(() => {
       fetchJobStatus();
       fetchIndexingStatus();
-    }, 2500);
+    }, 2000);
 
     return () => {
       if (pollTimerRef.current) {
@@ -530,20 +540,68 @@ export function ShamelaIngestion() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                   <Library className="h-3.5 w-3.5 text-primary" />
-                  Target Book ID to Index
+                  Target Books Scope
                 </label>
-                <Input
-                  value={indexingBookId}
-                  onChange={(e) => setIndexingBookId(e.target.value)}
-                  placeholder="'all' or specific Book ID (e.g. 1)"
-                  disabled={startingIndexing}
-                  className="bg-muted/30 text-xs font-mono"
-                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={indexingMode === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setIndexingMode('all')}
+                    disabled={startingIndexing}
+                    className="text-xs h-8"
+                  >
+                    🌟 All Books ({indexingStatus?.totalBooks ? `${indexingStatus.totalBooks.toLocaleString()}` : '3,642'})
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={indexingMode === 'range' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setIndexingMode('range')}
+                    disabled={startingIndexing}
+                    className="text-xs h-8"
+                  >
+                    🔢 Custom ID Range
+                  </Button>
+                </div>
+
+                {indexingMode === 'range' && (
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-muted-foreground font-medium">Start Book ID</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="e.g. 1"
+                        value={indexingStartId}
+                        onChange={(e) => setIndexingStartId(e.target.value)}
+                        disabled={startingIndexing}
+                        className="bg-muted/30 text-xs h-8 font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-muted-foreground font-medium">End Book ID</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="e.g. 50"
+                        value={indexingEndId}
+                        onChange={(e) => setIndexingEndId(e.target.value)}
+                        disabled={startingIndexing}
+                        className="bg-muted/30 text-xs h-8 font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <p className="text-[11px] text-muted-foreground">
-                  Enter <code className="text-primary font-mono font-semibold">all</code> to index all ingested books, or specify a specific Book ID.
+                  {indexingMode === 'all'
+                    ? "Generate retrieval chunks and vector embeddings across all verified ingested Shamela books."
+                    : `Will index books from #${indexingStartId || '1'} to #${indexingEndId || 'Max'}. Automatically maps to canonical IDs.`}
                 </p>
               </div>
 
