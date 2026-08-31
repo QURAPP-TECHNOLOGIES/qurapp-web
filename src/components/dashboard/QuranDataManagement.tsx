@@ -18,7 +18,8 @@ import {
   Key,
   Cloud,
   UploadCloud,
-  Headphones
+  Headphones,
+  Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +75,8 @@ export function QuranDataManagement() {
   const [dbStats, setDbStats] = useState<DBStats | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const [translations, setTranslations] = useState<TranslationEdition[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [loading, setLoading] = useState(true);
   const [updatingMode, setUpdatingMode] = useState(false);
   const [triggeringJob, setTriggeringJob] = useState(false);
@@ -526,59 +529,164 @@ export function QuranDataManagement() {
       </Card>
 
       {/* Grid Row 3: Translation Registry */}
-      <Card className="bg-card/50 border-border/60 backdrop-blur-md">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-emerald-500" />
-            <CardTitle className="text-lg font-semibold text-foreground font-display">Translation & License Registry</CardTitle>
-          </div>
-          <CardDescription className="text-muted-foreground text-xs">
-            Approved translation editions with commercial redistribution licensing provenance
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-foreground">
-              <thead className="bg-muted/50 text-muted-foreground uppercase font-mono border-b border-border/60">
-                <tr>
-                  <th className="p-3">Edition Key</th>
-                  <th className="p-3">Translation Name</th>
-                  <th className="p-3">Publisher / Author</th>
-                  <th className="p-3">License Type</th>
-                  <th className="p-3">Commercial Rights</th>
-                  <th className="p-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40">
-                {translations.map((item) => (
-                  <tr key={item.editionKey} className="hover:bg-muted/30 transition-colors">
-                    <td className="p-3 font-mono text-emerald-600 dark:text-emerald-400 font-medium">{item.editionKey}</td>
-                    <td className="p-3 font-semibold text-foreground">{item.name}</td>
-                    <td className="p-3 text-muted-foreground">{item.publisher} ({item.author})</td>
-                    <td className="p-3 text-foreground">{item.licenseType}</td>
-                    <td className="p-3">
-                      {item.commercialAllowed ? (
-                        <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
-                          Commercial Approved
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30">
-                          Restricted
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      <Badge variant="secondary" className="bg-muted text-muted-foreground capitalize">
-                        {item.status}
+      {(() => {
+        const uniqueLanguages = Array.from(new Set(translations.map((t) => t.language || 'other'))).sort();
+        const filteredTranslations = translations.filter((item) => {
+          const matchesQuery =
+            searchQuery.trim() === "" ||
+            item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.editionKey?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.author?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.publisher?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.language?.toLowerCase().includes(searchQuery.toLowerCase());
+
+          const matchesLang =
+            selectedLanguage === "all" || item.language?.toLowerCase() === selectedLanguage.toLowerCase();
+
+          return matchesQuery && matchesLang;
+        });
+
+        return (
+          <Card className="bg-card/50 border-border/60 backdrop-blur-md">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-emerald-500" />
+                    <CardTitle className="text-lg font-semibold text-foreground font-display">
+                      Translation & License Registry
+                    </CardTitle>
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-mono">
+                      {translations.length} Editions Approved
+                    </Badge>
+                  </div>
+                  <CardDescription className="text-muted-foreground text-xs mt-1">
+                    Canonical multi-lingual translation editions with verified commercial redistribution licensing provenance
+                  </CardDescription>
+                </div>
+
+                {/* Search Toolbar */}
+                <div className="relative w-full md:w-72">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name, language, ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 bg-background/50 border-border/60 text-xs h-9 rounded-lg"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Language Filter Pills */}
+              {uniqueLanguages.length > 1 && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-3 border-t border-border/40 mt-3">
+                  <span className="text-xs text-muted-foreground font-medium mr-1">Languages:</span>
+                  <Badge
+                    variant={selectedLanguage === "all" ? "default" : "outline"}
+                    className={`cursor-pointer text-[11px] px-2.5 py-0.5 transition-all ${
+                      selectedLanguage === "all"
+                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                        : "hover:bg-muted"
+                    }`}
+                    onClick={() => setSelectedLanguage("all")}
+                  >
+                    All ({translations.length})
+                  </Badge>
+                  {uniqueLanguages.slice(0, 15).map((lang) => {
+                    const count = translations.filter((t) => (t.language || 'other') === lang).length;
+                    return (
+                      <Badge
+                        key={lang}
+                        variant={selectedLanguage === lang ? "default" : "outline"}
+                        className={`cursor-pointer text-[11px] px-2.5 py-0.5 transition-all uppercase ${
+                          selectedLanguage === lang
+                            ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                            : "hover:bg-muted"
+                        }`}
+                        onClick={() => setSelectedLanguage(lang)}
+                      >
+                        {lang} ({count})
                       </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto rounded-xl border border-border/40 max-h-96 overflow-y-auto">
+                <table className="w-full text-left text-xs text-foreground">
+                  <thead className="bg-muted/70 text-muted-foreground uppercase font-mono border-b border-border/60 sticky top-0 backdrop-blur-md z-10">
+                    <tr>
+                      <th className="p-3">Edition Key</th>
+                      <th className="p-3">Translation Name</th>
+                      <th className="p-3">Language</th>
+                      <th className="p-3">Publisher / Author</th>
+                      <th className="p-3">License Type</th>
+                      <th className="p-3">Commercial Rights</th>
+                      <th className="p-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {filteredTranslations.length > 0 ? (
+                      filteredTranslations.map((item) => (
+                        <tr key={item.editionKey} className="hover:bg-muted/30 transition-colors">
+                          <td className="p-3 font-mono text-emerald-600 dark:text-emerald-400 font-medium">
+                            {item.editionKey}
+                          </td>
+                          <td className="p-3 font-semibold text-foreground">{item.name}</td>
+                          <td className="p-3">
+                            <Badge variant="outline" className="text-[10px] uppercase font-mono bg-muted/30">
+                              {item.language || 'en'}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-muted-foreground">
+                            {item.publisher || 'Canonical Knowledge'} ({item.author || item.name})
+                          </td>
+                          <td className="p-3 text-foreground">{item.licenseType || 'Open Islamic Knowledge License'}</td>
+                          <td className="p-3">
+                            {item.commercialAllowed ? (
+                              <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+                                Commercial Approved
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30">
+                                Restricted
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 capitalize">
+                              {item.status || 'approved'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="text-center py-8 text-muted-foreground italic">
+                          No translation editions match your search query "{searchQuery}".
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex justify-between items-center text-xs text-muted-foreground mt-3 font-mono">
+                <span>Showing {filteredTranslations.length} of {translations.length} approved editions</span>
+                <span>Provenance: Tanzil, QuranEnc & King Fahd Complex</span>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
     </div>
   );
 }
