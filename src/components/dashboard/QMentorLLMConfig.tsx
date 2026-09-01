@@ -21,6 +21,7 @@ import {
   Check,
   Code2,
   Info,
+  Compass,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { fetchWithAuth, apiGatewayUrl } from "@/lib/api";
+import { QurAppFeatureRegistryManager } from "./QurAppFeatureRegistryManager";
 
 export type LLMProviderType = "openai" | "anthropic" | "local" | "mock";
 
@@ -155,10 +157,13 @@ export function QMentorLLMConfig() {
   const [apiKeyOverride, setApiKeyOverride] = useState("");
   const [baseUrlOverride, setBaseUrlOverride] = useState("");
 
+  // Main Section State
+  const [activeSection, setActiveSection] = useState<"playground" | "registry">("playground");
+
   // Playground State
   const [testPrompt, setTestPrompt] = useState(PRESET_QUERIES[0].prompt);
   const [testResult, setTestResult] = useState<any>(null);
-  const [playgroundTab, setPlaygroundTab] = useState<"response" | "evidence" | "gating" | "json">("response");
+  const [playgroundTab, setPlaygroundTab] = useState<string>("response");
 
   const { toast } = useToast();
 
@@ -386,42 +391,68 @@ export function QMentorLLMConfig() {
         </Button>
       </div>
 
-      {/* Active Provider Overview Banner */}
-      <Card className="bg-gradient-to-r from-primary/10 via-card to-card border-primary/20 shadow-md">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                <Bot className="h-6 w-6" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">Active System Model</span>
-                  {getStatusBadge("configured")}
+      {/* Sub-Navigation Switcher */}
+      <div className="flex items-center gap-2 border-b border-border/60 pb-2">
+        <Button
+          variant={activeSection === "playground" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setActiveSection("playground")}
+          className="text-xs gap-2"
+        >
+          <Bot className="h-4 w-4" />
+          Model Playground & Diagnostics
+        </Button>
+        <Button
+          variant={activeSection === "registry" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setActiveSection("registry")}
+          className="text-xs gap-2"
+        >
+          <Compass className="h-4 w-4 text-primary" />
+          QurApp Feature Registry (PostgreSQL)
+        </Button>
+      </div>
+
+      {activeSection === "registry" ? (
+        <QurAppFeatureRegistryManager />
+      ) : (
+        <>
+          {/* Active Provider Overview Banner */}
+          <Card className="bg-gradient-to-r from-primary/10 via-card to-card border-primary/20 shadow-md">
+            <CardContent className="pt-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                    <Bot className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-primary uppercase tracking-wider">Active System Model</span>
+                      {getStatusBadge("configured")}
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground mt-0.5">
+                      {config?.activeProvider.toUpperCase()} — <span className="text-primary font-mono text-base">{config?.activeModel}</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Temperature: <span className="font-mono text-foreground font-semibold">{config?.temperature ?? 0.3}</span> | Max Tokens:{" "}
+                      <span className="font-mono text-foreground font-semibold">{config?.maxTokens ?? 300}</span> | Phase 10 Verification:{" "}
+                      <span className="text-emerald-500 font-semibold">Active & Enforced</span>
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-foreground mt-0.5">
-                  {config?.activeProvider.toUpperCase()} — <span className="text-primary font-mono text-base">{config?.activeModel}</span>
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Temperature: <span className="font-mono text-foreground font-semibold">{config?.temperature ?? 0.3}</span> | Max Tokens:{" "}
-                  <span className="font-mono text-foreground font-semibold">{config?.maxTokens ?? 300}</span> | Phase 10 Verification:{" "}
-                  <span className="text-emerald-500 font-semibold">Active & Enforced</span>
-                </p>
+
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="gap-1.5 py-1 px-3 bg-card/80 border-emerald-500/30 text-emerald-500">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Evidence & Citation Gate v1.0
+                  </Badge>
+                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="gap-1.5 py-1 px-3 bg-card/80 border-emerald-500/30 text-emerald-500">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Evidence & Citation Gate v1.0
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Main Configuration & Playground Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Main Configuration & Playground Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Form Controls & Hyperparameters */}
         <div className="lg:col-span-5 space-y-6">
           <Card className="border-border/60 shadow-md">
@@ -603,10 +634,14 @@ export function QMentorLLMConfig() {
               {testResult && (
                 <div className="space-y-3 pt-2">
                   <Tabs value={playgroundTab} onValueChange={(val: any) => setPlaygroundTab(val)} className="w-full">
-                    <TabsList className="grid grid-cols-4 w-full bg-muted/50 p-1">
+                    <TabsList className="grid grid-cols-5 w-full bg-muted/50 p-1">
                       <TabsTrigger value="response" className="text-xs gap-1.5">
                         <Bot className="h-3.5 w-3.5" />
                         Response
+                      </TabsTrigger>
+                      <TabsTrigger value="interventions" className="text-xs gap-1.5">
+                        <Compass className="h-3.5 w-3.5 text-primary" />
+                        Interventions ({testResult.interventions?.length || 0})
                       </TabsTrigger>
                       <TabsTrigger value="evidence" className="text-xs gap-1.5">
                         <BookOpen className="h-3.5 w-3.5" />
@@ -651,6 +686,93 @@ export function QMentorLLMConfig() {
                           </Button>
                         </div>
                         <p className="text-xs leading-relaxed whitespace-pre-wrap font-sans text-zinc-100">{testResult.response}</p>
+                      </div>
+                    </TabsContent>
+
+                    {/* 2. Contextual Guidance & Interventions Tab (Phase 10G) */}
+                    <TabsContent value="interventions" className="space-y-3 mt-3">
+                      <div className="p-3.5 rounded-xl border border-border/80 bg-muted/20 space-y-3">
+                        {/* Need & Intent Diagnosis */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                          <div className="p-2.5 rounded-lg bg-background border border-border/60">
+                            <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Primary Intent</span>
+                            <div className="mt-1">
+                              <Badge className="bg-primary/10 text-primary border-primary/30 text-[11px]">
+                                {testResult.detectedIntent || "GENERAL_INQUIRY"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="p-2.5 rounded-lg bg-background border border-border/60">
+                            <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Need Type</span>
+                            <div className="mt-1 font-mono text-[11px] font-semibold text-foreground">
+                              {testResult.needType || "FACTUAL_QUESTION"}
+                            </div>
+                          </div>
+                          <div className="p-2.5 rounded-lg bg-background border border-border/60">
+                            <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Risk & Scope</span>
+                            <div className="mt-1 flex items-center gap-1.5">
+                              <Badge variant="outline" className={`text-[11px] ${testResult.riskLevel === 'HIGH' ? 'text-destructive border-destructive/40 bg-destructive/10' : 'text-emerald-500 border-emerald-500/40 bg-emerald-500/10'}`}>
+                                {testResult.riskLevel || "LOW"}
+                              </Badge>
+                              <span className="text-[10px] text-muted-foreground font-mono">Action: {testResult.guardAction || "ALLOW"}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Secondary Intents */}
+                        {testResult.secondaryIntents && testResult.secondaryIntents.length > 0 && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <span className="text-[10px] font-medium">Secondary Drivers:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {testResult.secondaryIntents.map((s: string) => (
+                                <Badge key={s} variant="secondary" className="text-[10px] py-0 px-1.5">
+                                  {s}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Guidance Summary */}
+                        {testResult.guidanceSummary && (
+                          <div className="text-xs text-muted-foreground bg-primary/5 p-2.5 rounded-lg border border-primary/20">
+                            <strong className="text-foreground">Guidance Strategy:</strong> {testResult.guidanceSummary}
+                          </div>
+                        )}
+
+                        {/* Recommended QurApp Capabilities */}
+                        <div className="space-y-2 pt-1">
+                          <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                            <Compass className="h-3.5 w-3.5 text-primary" />
+                            Actionable QurApp Interventions ({testResult.interventions?.length || 0})
+                          </label>
+
+                          {testResult.interventions && testResult.interventions.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {testResult.interventions.map((inv: any) => (
+                                <div key={inv.featureId} className="p-3 rounded-lg border border-border/80 bg-background hover:border-primary/40 transition-colors space-y-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-foreground">{inv.title}</span>
+                                    <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                                      {inv.action}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                    {inv.reason}
+                                  </p>
+                                  <div className="text-[10px] font-mono text-primary/80 truncate pt-1 flex items-center gap-1">
+                                    <span>Deep Link:</span>
+                                    <code className="bg-muted px-1 rounded">{inv.deeplink}</code>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-muted-foreground py-2 text-center bg-background rounded-lg border border-border/40">
+                              No specific QurApp product intervention required for this query.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </TabsContent>
 
@@ -744,6 +866,8 @@ export function QMentorLLMConfig() {
           </Card>
         </div>
       </div>
-    </div>
+    </>
+  )}
+</div>
   );
 }
