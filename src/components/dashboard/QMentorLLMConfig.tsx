@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Bot,
   Sparkles,
@@ -11,10 +10,8 @@ import {
   Zap,
   Loader2,
   CheckCircle2,
-  AlertTriangle,
   Play,
   Server,
-  Layers,
   BookOpen,
   Scale,
   Scroll,
@@ -157,7 +154,7 @@ export function QMentorLLMConfig() {
   const [maxTokens, setMaxTokens] = useState<number>(300);
   const [apiKeyOverride, setApiKeyOverride] = useState("");
   const [baseUrlOverride, setBaseUrlOverride] = useState("");
-  
+
   // Playground State
   const [testPrompt, setTestPrompt] = useState(PRESET_QUERIES[0].prompt);
   const [testResult, setTestResult] = useState<any>(null);
@@ -294,92 +291,48 @@ export function QMentorLLMConfig() {
     setTesting(true);
     setTestResult(null);
 
+    const payload = {
+      prompt: testPrompt,
+      activeProvider: selectedProvider,
+      activeModel: selectedModel,
+      apiKeyOverride: apiKeyOverride.trim() || undefined,
+      baseUrlOverride: baseUrlOverride.trim() || undefined,
+      temperature,
+      maxTokens,
+      runVerificationPipeline: true,
+    };
+
     try {
       let res = await fetchWithAuth(`${apiGatewayUrl}/api/v1/mentor/admin/llm-provider/test`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: testPrompt, runVerificationPipeline: true }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
         res = await fetchWithAuth(`${apiGatewayUrl}/v1/mentor/admin/llm-provider/test`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: testPrompt, runVerificationPipeline: true }),
+          body: JSON.stringify(payload),
         });
       }
 
       if (res.ok) {
         const data = await res.json();
         setTestResult(data);
-        toast({
-          title: "Live Test Completed",
-          description: `Generated using ${data.providerUsed} (${data.modelUsed}) in ${data.latencyMs}ms.`,
-        });
+        if (data.isLive) {
+          toast({
+            title: "Live Model Inference Succeeded",
+            description: `Real inference from ${data.providerUsed.toUpperCase()} (${data.modelUsed}) in ${data.latencyMs}ms.`,
+          });
+        } else {
+          toast({
+            title: "Test Execution Completed",
+            description: `Response generated using ${data.providerUsed} (${data.modelUsed}) in ${data.latencyMs}ms.`,
+          });
+        }
       } else {
-        // Realistic simulated fallback if service is in standalone mode
-        const mockLatency = Math.floor(Math.random() * 80) + 120;
-        const mockResult = {
-          status: "success",
-          testPrompt,
-          response: `According to classical Islamic scholarship, ${testPrompt.includes("2:255") ? "Ayat al-Kursi (Surah Al-Baqarah 2:255) is the greatest verse of the Qur'an affirming the absolute oneness (Tawheed), eternal life, and self-subsistence of Allah [Surah 2:255]." : testPrompt.includes("intention") ? "The noble hadith 'Actions are by intention' is the foundation of Islamic jurisprudence and moral accountability [Sahih al-Bukhari 1]." : "Islamic jurisprudence balances foundational divine texts with detailed contextual analysis from classical jurists."}`,
-          providerUsed: selectedProvider,
-          modelUsed: selectedModel,
-          latencyMs: mockLatency,
-          tokenUsage: { promptTokens: 32, completionTokens: 64 },
-          evidence: [
-            {
-              evidenceId: "ev-quran-2-255",
-              sourceType: "QURAN",
-              title: "Surah Al-Baqarah 2:255 (Ayat al-Kursi)",
-              author: "Canonical Quran",
-              reference: { bookTitle: "The Holy Quran", surah: 2, ayah: 255 },
-              text: "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ Allah - there is no deity except Him, the Ever-Living, the Sustainer of all existence.",
-              authority: "CANONICAL_QURAN",
-              provenance: { sourceId: "quran-2-255", sourceType: "QURAN", contentHash: "e3b0c44298fc1c14" },
-            },
-            {
-              evidenceId: "ev-bukhari-1",
-              sourceType: "HADITH",
-              title: "Sahih al-Bukhari 1",
-              author: "Muhammad ibn Ismail al-Bukhari",
-              reference: { bookTitle: "Sahih al-Bukhari", hadithCollection: "Sahih al-Bukhari", hadithNumber: "1" },
-              text: "إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ Actions are but by intention.",
-              authority: "VERIFIED_HADITH",
-              provenance: { sourceId: "bukhari-1", sourceType: "HADITH", contentHash: "b2c3d4e5f6a7b8c9" },
-            },
-          ],
-          conflictAnalysis: {
-            hasConflict: false,
-            primaryConflictType: "COMPLEMENTARY",
-            severity: "NONE",
-            consensusLevel: "CONSENSUS_IJMA",
-            synthesisGuidance: "Sources are complementary. Quran revelation and verified Hadith traditions align harmoniously.",
-          },
-          validation: {
-            overallStatus: "VALID",
-            actionTaken: "ALLOW",
-            citationCoverage: 1.0,
-            supportRate: 1.0,
-            claims: [
-              {
-                claimId: "claim-1",
-                text: "Verified religious assertion bound directly to canonical scripture.",
-                claimType: "QURANIC",
-                supportLevel: "FULL",
-                status: "VALID",
-                citationIds: ["Surah 2:255"],
-                reasons: [],
-                severity: "INFO",
-              },
-            ],
-          },
-        };
-        setTestResult(mockResult);
-        toast({
-          title: "Live Test Completed",
-          description: `Test completed using ${selectedProvider} (${selectedModel}) in ${mockLatency}ms.`,
-        });
+        throw new Error("Failed to execute provider test call.");
       }
     } catch (e: any) {
       toast({
@@ -494,11 +447,10 @@ export function QMentorLLMConfig() {
                       key={p.id}
                       type="button"
                       onClick={() => handleProviderChange(p.id as LLMProviderType)}
-                      className={`p-3 rounded-xl border text-left transition-all relative ${
-                        selectedProvider === p.id
-                          ? "bg-primary/10 border-primary shadow-sm text-foreground"
-                          : "bg-card hover:bg-muted/40 border-border/60 text-muted-foreground"
-                      }`}
+                      className={`p-3 rounded-xl border text-left transition-all relative ${selectedProvider === p.id
+                        ? "bg-primary/10 border-primary shadow-sm text-foreground"
+                        : "bg-card hover:bg-muted/40 border-border/60 text-muted-foreground"
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-1.5">
@@ -613,11 +565,10 @@ export function QMentorLLMConfig() {
                       key={p.id}
                       type="button"
                       onClick={() => setTestPrompt(p.prompt)}
-                      className={`text-[11px] py-1 px-2.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 ${
-                        testPrompt === p.prompt
-                          ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                          : "bg-muted/40 hover:bg-muted text-muted-foreground border-border/60"
-                      }`}
+                      className={`text-[11px] py-1 px-2.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 ${testPrompt === p.prompt
+                        ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                        : "bg-muted/40 hover:bg-muted text-muted-foreground border-border/60"
+                        }`}
                     >
                       <p.icon className="h-3 w-3" />
                       {p.label}
@@ -679,6 +630,15 @@ export function QMentorLLMConfig() {
                             <span>Provider: <strong className="text-emerald-400">{testResult.providerUsed}</strong></span>
                             <span>•</span>
                             <span>Model: <strong className="text-blue-400 font-mono">{testResult.modelUsed}</strong></span>
+                            {testResult.isLive ? (
+                              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-[10px] py-0 px-1.5 gap-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Inference
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-amber-400 border-amber-400/40 text-[10px] py-0 px-1.5">
+                                Offline / Fallback
+                              </Badge>
+                            )}
                           </div>
                           <Button
                             variant="ghost"
