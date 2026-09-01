@@ -34,6 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { fetchWithAuth, apiGatewayUrl } from "@/lib/api";
 import { QurAppFeatureRegistryManager } from "./QurAppFeatureRegistryManager";
+import { QurAIGovernanceConsole } from "./QurAIGovernanceConsole";
 
 export type LLMProviderType = "openai" | "anthropic" | "local" | "mock";
 
@@ -158,7 +159,7 @@ export function QMentorLLMConfig() {
   const [baseUrlOverride, setBaseUrlOverride] = useState("");
 
   // Main Section State
-  const [activeSection, setActiveSection] = useState<"playground" | "registry">("playground");
+  const [activeSection, setActiveSection] = useState<"playground" | "registry" | "governance">("playground");
 
   // Playground State
   const [testPrompt, setTestPrompt] = useState(PRESET_QUERIES[0].prompt);
@@ -411,9 +412,20 @@ export function QMentorLLMConfig() {
           <Compass className="h-4 w-4 text-primary" />
           QurApp Feature Registry (PostgreSQL)
         </Button>
+        <Button
+          variant={activeSection === "governance" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setActiveSection("governance")}
+          className="text-xs gap-2 border-emerald-500/30"
+        >
+          <ShieldCheck className="h-4 w-4 text-emerald-400" />
+          QurAI Governance Console
+        </Button>
       </div>
 
-      {activeSection === "registry" ? (
+      {activeSection === "governance" ? (
+        <QurAIGovernanceConsole />
+      ) : activeSection === "registry" ? (
         <QurAppFeatureRegistryManager />
       ) : (
         <>
