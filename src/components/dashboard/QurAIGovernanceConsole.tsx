@@ -83,27 +83,42 @@ export const QurAIGovernanceConsole: React.FC = () => {
     setLoading(true);
     try {
       // 1. Load active governance record
-      const activeRes = await fetchWithAuth(
-        `${apiGatewayUrl()}/api/v1/mentor/admin/governance/active`
+      let activeRes = await fetchWithAuth(
+        `${apiGatewayUrl}/api/v1/mentor/admin/governance/active`
       );
+      if (!activeRes.ok) {
+        activeRes = await fetchWithAuth(
+          `${apiGatewayUrl}/v1/mentor/admin/governance/active`
+        );
+      }
       if (activeRes.ok) {
         const data = await activeRes.json();
         setActiveRecord(data);
       }
 
       // 2. Load revision history
-      const revRes = await fetchWithAuth(
-        `${apiGatewayUrl()}/api/v1/mentor/admin/governance/revisions`
+      let revRes = await fetchWithAuth(
+        `${apiGatewayUrl}/api/v1/mentor/admin/governance/revisions`
       );
+      if (!revRes.ok) {
+        revRes = await fetchWithAuth(
+          `${apiGatewayUrl}/v1/mentor/admin/governance/revisions`
+        );
+      }
       if (revRes.ok) {
         const data = await revRes.json();
         setRevisions(data.revisions || []);
       }
 
       // 3. Load live runtime health
-      const healthRes = await fetchWithAuth(
-        `${apiGatewayUrl()}/api/v1/mentor/admin/governance/runtime-health`
+      let healthRes = await fetchWithAuth(
+        `${apiGatewayUrl}/api/v1/mentor/admin/governance/runtime-health`
       );
+      if (!healthRes.ok) {
+        healthRes = await fetchWithAuth(
+          `${apiGatewayUrl}/v1/mentor/admin/governance/runtime-health`
+        );
+      }
       if (healthRes.ok) {
         const data = await healthRes.json();
         setRuntimeHealth(data);
@@ -138,8 +153,8 @@ export const QurAIGovernanceConsole: React.FC = () => {
 
   const handleSaveDraft = async () => {
     try {
-      const res = await fetchWithAuth(
-        `${apiGatewayUrl()}/api/v1/mentor/admin/governance/drafts`,
+      let res = await fetchWithAuth(
+        `${apiGatewayUrl}/api/v1/mentor/admin/governance/drafts`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -153,6 +168,23 @@ export const QurAIGovernanceConsole: React.FC = () => {
           }),
         }
       );
+      if (!res.ok) {
+        res = await fetchWithAuth(
+          `${apiGatewayUrl}/v1/mentor/admin/governance/drafts`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              identity_data: editingDraft.identity_data,
+              capabilities_data: editingDraft.capabilities_data,
+              knowledge_sources_data: editingDraft.knowledge_sources_data,
+              disclosures_data: editingDraft.disclosures_data,
+              created_by: "admin_console",
+              change_summary: draftSummary,
+            }),
+          }
+        );
+      }
 
       if (res.ok) {
         toast({
@@ -176,13 +208,22 @@ export const QurAIGovernanceConsole: React.FC = () => {
 
   const handleActivateRevision = async (revisionId: string) => {
     try {
-      const res = await fetchWithAuth(
-        `${apiGatewayUrl()}/api/v1/mentor/admin/governance/revisions/${revisionId}/activate`,
+      let res = await fetchWithAuth(
+        `${apiGatewayUrl}/api/v1/mentor/admin/governance/revisions/${revisionId}/activate`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         }
       );
+      if (!res.ok) {
+        res = await fetchWithAuth(
+          `${apiGatewayUrl}/v1/mentor/admin/governance/revisions/${revisionId}/activate`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
 
       if (res.ok) {
         toast({
