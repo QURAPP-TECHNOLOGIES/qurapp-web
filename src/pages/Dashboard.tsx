@@ -47,6 +47,8 @@ export default function Dashboard() {
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") || "dashboard";
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useSEO({
     title: "Admin Dashboard",

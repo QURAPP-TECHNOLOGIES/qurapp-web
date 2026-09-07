@@ -296,14 +296,14 @@ export const QurAIRouterTelemetry: React.FC = () => {
           <div className="mt-4 pt-3 border-t border-border/50 grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] font-mono">
             <div className="bg-muted/40 p-2 rounded-lg border border-border/50 flex items-center justify-between">
               <span className="text-muted-foreground">Base Model Checkpoint:</span>
-              <span className="text-primary truncate max-w-[180px] font-bold" title={overview.base_checkpoint_hash}>
-                {overview.base_checkpoint_hash.substring(0, 16)}...
+              <span className="text-primary truncate max-w-[180px] font-bold" title={overview?.base_checkpoint_hash || ""}>
+                {overview?.base_checkpoint_hash ? `${overview.base_checkpoint_hash.substring(0, 16)}...` : "N/A"}
               </span>
             </div>
             <div className="bg-muted/40 p-2 rounded-lg border border-border/50 flex items-center justify-between">
               <span className="text-muted-foreground">RC2 Verifier Prototypes:</span>
-              <span className="text-emerald-400 truncate max-w-[180px] font-bold" title={overview.verifier_prototype_hash}>
-                {overview.verifier_prototype_hash.substring(0, 16)}...
+              <span className="text-emerald-400 truncate max-w-[180px] font-bold" title={overview?.verifier_prototype_hash || ""}>
+                {overview?.verifier_prototype_hash ? `${overview.verifier_prototype_hash.substring(0, 16)}...` : "N/A"}
               </span>
             </div>
             <div className="bg-muted/40 p-2 rounded-lg border border-border/50 flex items-center justify-between">
@@ -323,7 +323,7 @@ export const QurAIRouterTelemetry: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Requests</p>
-                <h3 className="text-2xl font-bold text-foreground mt-1">{overview.total_requests.toLocaleString()}</h3>
+                <h3 className="text-2xl font-bold text-foreground mt-1">{(overview?.total_requests ?? 0).toLocaleString()}</h3>
                 <p className="text-[11px] text-emerald-400 mt-0.5">100% Staging RC2 Routed</p>
               </div>
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
@@ -761,7 +761,7 @@ export const QurAIRouterTelemetry: React.FC = () => {
                   Recent Shadow Comparison Samples
                 </p>
                 <div className="space-y-2">
-                  {differential.recent_differentials.map((item, idx) => (
+                  {(differential?.recent_differentials || []).map((item, idx) => (
                     <div key={idx} className="p-3 rounded-lg bg-muted/20 border border-border/40 space-y-1.5 text-xs">
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-foreground">"{item.message}"</span>
@@ -843,30 +843,30 @@ export const QurAIRouterTelemetry: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      events.map((ev, idx) => (
+                      (events || []).map((ev, idx) => (
                         <tr key={idx} className="hover:bg-muted/20">
-                          <td className="p-2.5 text-muted-foreground">{ev.timestamp.substring(11, 19)}</td>
-                          <td className="p-2.5 text-primary">{ev.request_id}</td>
-                          <td className="p-2.5 font-semibold text-foreground">{ev.route}</td>
+                          <td className="p-2.5 text-muted-foreground">{ev?.timestamp ? ev.timestamp.substring(11, 19) : "--:--:--"}</td>
+                          <td className="p-2.5 text-primary">{ev?.request_id || "req_anon"}</td>
+                          <td className="p-2.5 font-semibold text-foreground">{ev?.route || "general_qurai"}</td>
                           <td className="p-2.5">
                             <span
                               className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold ${
-                                ev.decision === "direct"
+                                ev?.decision === "direct"
                                   ? "bg-primary/20 text-primary"
-                                  : ev.decision === "safety"
+                                  : ev?.decision === "safety"
                                   ? "bg-emerald-500/20 text-emerald-400"
                                   : "bg-muted text-muted-foreground"
                               }`}
                             >
-                              {ev.decision}
+                              {ev?.decision || "fallback"}
                             </span>
                           </td>
-                          <td className="p-2.5 text-muted-foreground truncate max-w-[120px]">{ev.domain}</td>
+                          <td className="p-2.5 text-muted-foreground truncate max-w-[120px]">{ev?.domain || "general"}</td>
                           <td className="p-2.5">
-                            {(ev.classifier_confidence ?? 0.99).toFixed(2)} / {(ev.verifier_score ?? 0.90).toFixed(2)}
+                            {(ev?.classifier_confidence ?? 0.99).toFixed(2)} / {(ev?.verifier_score ?? 0.90).toFixed(2)}
                           </td>
-                          <td className="p-2.5 text-emerald-400">{ev.router_latency_ms.toFixed(1)}ms</td>
-                          <td className="p-2.5 text-muted-foreground">{ev.downstream_service}</td>
+                          <td className="p-2.5 text-emerald-400">{(ev?.router_latency_ms ?? 0).toFixed(1)}ms</td>
+                          <td className="p-2.5 text-muted-foreground">{ev?.downstream_service || "knowledge-service"}</td>
                         </tr>
                       ))
                     )}

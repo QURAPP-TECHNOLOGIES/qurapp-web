@@ -185,7 +185,9 @@ export function HisnulMuslimConfig() {
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                     Latest Version
-                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" title="The most recent release version of the app." />
+                    <span title="The most recent release version of the app.">
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </span>
                   </label>
                   <Input
                     value={config.latestVersion}
@@ -201,7 +203,9 @@ export function HisnulMuslimConfig() {
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                     Minimum Required Version
-                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" title="Apps running on versions older than this will be forced to update." />
+                    <span title="Apps running on versions older than this will be forced to update.">
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </span>
                   </label>
                   <Input
                     value={config.minRequiredVersion}
