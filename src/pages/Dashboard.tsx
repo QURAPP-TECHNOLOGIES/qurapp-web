@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, BookOpen, MessageSquare, Trophy,
   Bell, Search, Settings, Menu, X,
-  Calendar, Download, Filter, Mail, Send, Database, Image, Music, Heart, Sparkles
+  Calendar, Download, Filter, Mail, Send, Database, Image, Music, Heart, Sparkles, GitFork
 } from "lucide-react";
+import { QurAIRouterTelemetry } from "@/components/dashboard/QurAIRouterTelemetry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -43,9 +44,9 @@ import { useSEO } from "@/hooks/useSEO";
 import logo from "@/assets/logo.png";
 
 export default function Dashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "dashboard";
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   useSEO({
     title: "Admin Dashboard",
@@ -88,6 +89,7 @@ export default function Dashboard() {
   const navItems = [
     { label: "Dashboard", icon: Menu, id: "dashboard" },
     { label: "QurAI Mentor", icon: Sparkles, id: "qmentor" },
+    { label: "QurAI Router", icon: GitFork, id: "qurai-router" },
     { label: "Quran Assets", icon: Database, id: "quran-assets" },
     { label: "Hisnul Muslim", icon: Music, id: "hisnul-muslim" },
     { label: "Islamic Gallery", icon: Image, id: "gallery" },
@@ -520,6 +522,16 @@ export default function Dashboard() {
               <Trophy className="h-16 w-16 mx-auto mb-4 opacity-50" />
               <h2 className="text-xl font-semibold text-foreground mb-2">Advanced Analytics</h2>
               <p>Advanced analytics features coming soon</p>
+            </motion.div>
+          )}
+
+          {activeTab === "qurai-router" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <QurAIRouterTelemetry />
             </motion.div>
           )}
 

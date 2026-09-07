@@ -89,6 +89,10 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/qurai/router"
+                element={<Navigate to="/dashboard?tab=qurai-router" replace />}
+              />
 
               {/* Catch-all 404 Route */}
               <Route path="*" element={<NotFound />} />
