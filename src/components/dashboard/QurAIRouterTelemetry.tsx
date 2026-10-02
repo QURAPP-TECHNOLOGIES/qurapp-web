@@ -47,6 +47,7 @@ export interface TelemetryOverview {
   p50_latency_ms: number;
   p95_latency_ms: number;
   health_status: "HEALTHY" | "WARNING" | "HOLD" | "FAIL";
+  warning_reasons?: string[];
   environment: string;
   active_version: string;
   base_checkpoint_hash: string;
@@ -228,8 +229,19 @@ export const QurAIRouterTelemetry: React.FC = () => {
     switch (status) {
       case "HEALTHY":
         return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 gap-1.5 py-1 px-3"><CheckCircle2 className="h-3.5 w-3.5" /> STAGING HEALTHY</Badge>;
-      case "WARNING":
-        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 gap-1.5 py-1 px-3"><AlertTriangle className="h-3.5 w-3.5" /> WARNING (SLA / FALLBACK)</Badge>;
+      case "WARNING": {
+        const reasonsText = overview.warning_reasons && overview.warning_reasons.length > 0
+          ? ` (${overview.warning_reasons[0]})`
+          : " (SLA / FALLBACK)";
+        return (
+          <Badge
+            className="bg-amber-500/20 text-amber-400 border-amber-500/30 gap-1.5 py-1 px-3"
+            title={overview.warning_reasons?.join("\n") || "SLA or Fallback limit reached"}
+          >
+            <AlertTriangle className="h-3.5 w-3.5" /> WARNING{reasonsText}
+          </Badge>
+        );
+      }
       case "HOLD":
         return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 gap-1.5 py-1 px-3"><Clock className="h-3.5 w-3.5" /> AUDIT HOLD</Badge>;
       case "FAIL":

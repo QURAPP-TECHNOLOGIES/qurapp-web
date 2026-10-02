@@ -4,9 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, BookOpen, MessageSquare, Trophy,
   Bell, Search, Settings, Menu, X,
-  Calendar, Download, Filter, Mail, Send, Database, Image, Music, Heart, Sparkles, GitFork
+  Calendar, Download, Filter, Mail, Send, Database, Image, Music, Heart, Sparkles, GitFork, ShieldAlert, Radio
 } from "lucide-react";
+import { ModerationReports } from "@/components/dashboard/ModerationReports";
 import { QurAIRouterTelemetry } from "@/components/dashboard/QurAIRouterTelemetry";
+import { GlobalRoomsAdmin } from "@/components/dashboard/GlobalRoomsAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -90,6 +92,7 @@ export default function Dashboard() {
 
   const navItems = [
     { label: "Dashboard", icon: Menu, id: "dashboard" },
+    { label: "Global Rooms", icon: Radio, id: "global-rooms" },
     { label: "QurAI Mentor", icon: Sparkles, id: "qmentor" },
     { label: "QurAI Router", icon: GitFork, id: "qurai-router" },
     { label: "Quran Assets", icon: Database, id: "quran-assets" },
@@ -98,6 +101,7 @@ export default function Dashboard() {
     { label: "Shamela Ingest", icon: Database, id: "shamela" },
     { label: "Hadith Ingest", icon: Database, id: "hadith-ingest" },
     { label: "Qur'an Data", icon: Database, id: "quran-canonical" },
+    { label: "Moderation", icon: ShieldAlert, id: "moderation" },
     { label: "Users", icon: Users, id: "users" },
     { label: "Emails", icon: Mail, id: "emails" },
     { label: "Notifications", icon: Send, id: "notifications" },
@@ -397,6 +401,16 @@ export default function Dashboard() {
             </motion.div>
           )}
 
+          {activeTab === "global-rooms" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <GlobalRoomsAdmin />
+            </motion.div>
+          )}
+
           {activeTab === "shamela" && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -424,6 +438,16 @@ export default function Dashboard() {
               transition={{ duration: 0.5 }}
             >
               <QuranDataManagement />
+            </motion.div>
+          )}
+
+          {activeTab === "moderation" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <ModerationReports />
             </motion.div>
           )}
 

@@ -50,35 +50,40 @@
   }
 
   .dark {
-    --background: 24 20% 8%;
-    --foreground: 35 33% 96%;
+    /* Deep Navy Theme - QurApp Design System */
+    --background: 221 53% 11%; /* #0D162A Deep Navy Canvas */
+    --foreground: 40 20% 95%; /* #F5F3EF Primary Text */
     
-    --card: 24 20% 10%;
-    --card-foreground: 35 33% 96%;
+    --card: 218 40% 17%; /* #1A273D Primary Card */
+    --card-foreground: 40 20% 95%; /* #F5F3EF */
     
-    --popover: 24 20% 10%;
-    --popover-foreground: 35 33% 96%;
+    --popover: 217 36% 21%; /* #223149 Elevated Card / Popover */
+    --popover-foreground: 40 20% 95%; /* #F5F3EF */
     
-    --primary: 38 60% 55%;
-    --primary-foreground: 24 20% 8%;
+    --primary: 26 45% 45%; /* #A66B3F Dark Bronze Accent */
+    --primary-foreground: 38 38% 96%; /* #F9F6F1 Light Text */
     
-    --secondary: 24 15% 18%;
-    --secondary-foreground: 35 33% 96%;
+    --secondary: 217 36% 21%; /* #223149 Elevated Panel */
+    --secondary-foreground: 40 20% 95%; /* #F5F3EF */
     
-    --muted: 24 15% 15%;
-    --muted-foreground: 35 20% 60%;
+    --muted: 219 48% 13%; /* #111C31 Dark Surface */
+    --muted-foreground: 216 18% 70%; /* #A5B0C0 Secondary Text */
     
-    --accent: 80 40% 50%;
-    --accent-foreground: 24 20% 8%;
+    --accent: 89 41% 31%; /* #506F2F Dark Olive Accent */
+    --accent-foreground: 38 38% 96%; /* #F9F6F1 */
     
-    --destructive: 0 62% 50%;
+    --destructive: 354 70% 54%; /* #DC3545 Error Red */
     --destructive-foreground: 0 0% 100%;
     
-    --border: 24 15% 20%;
-    --input: 24 15% 18%;
-    --ring: 38 60% 55%;
+    --border: 217 29% 24%; /* #2C3A50 Border */
+    --input: 217 29% 25%; /* #2D3B52 Input Surface */
+    --ring: 26 45% 45%; /* #A66B3F Bronze Ring */
     
-    --gold: 38 65% 50%;
+    --gold: 34 65% 50%; /* #D18A2D Amber/Gold */
+
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -4px rgba(0, 0, 0, 0.4);
+    --shadow-card: 0 8px 30px -8px rgba(0, 0, 0, 0.5);
   }
 }
 

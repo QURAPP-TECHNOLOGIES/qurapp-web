@@ -686,6 +686,17 @@ export function QMentorLLMConfig() {
                                 Offline / Fallback
                               </Badge>
                             )}
+                            {testResult.tokenUsage && (
+                              <>
+                                <span>•</span>
+                                <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-blue-500/40 text-blue-400 font-mono">
+                                  Prompt: {testResult.tokenUsage.promptTokens || 0} toks
+                                </Badge>
+                                <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-purple-500/40 text-purple-400 font-mono">
+                                  Completion: {testResult.tokenUsage.completionTokens || 0} toks
+                                </Badge>
+                              </>
+                            )}
                           </div>
                           <Button
                             variant="ghost"
@@ -699,6 +710,42 @@ export function QMentorLLMConfig() {
                         </div>
                         <p className="text-xs leading-relaxed whitespace-pre-wrap font-sans text-zinc-100">{testResult.response}</p>
                       </div>
+
+                      {/* Actionable QurApp Interventions in Response Tab */}
+                      {testResult.interventions && testResult.interventions.length > 0 && (
+                        <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                              <Compass className="h-4 w-4 text-primary" />
+                              Actionable QurApp Interventions ({testResult.interventions.length})
+                            </label>
+                            <span className="text-[10px] text-muted-foreground">Recommended native app actions</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {testResult.interventions.map((inv: any) => (
+                              <div
+                                key={inv.featureId}
+                                className="p-3 rounded-lg border border-border/80 bg-background/80 hover:border-primary/50 transition-all shadow-xs space-y-1.5"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                    <span className="h-2 w-2 rounded-full bg-primary" />
+                                    {inv.title}
+                                  </span>
+                                  <Badge className="text-[10px] py-0 px-1.5 bg-primary/10 text-primary border-primary/30">
+                                    {inv.action || "OPEN"}
+                                  </Badge>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground leading-relaxed">{inv.reason}</p>
+                                <div className="text-[10px] font-mono text-primary/90 truncate pt-1 flex items-center gap-1 border-t border-border/40">
+                                  <span className="text-muted-foreground">Deep Link:</span>
+                                  <code className="bg-muted px-1.5 py-0.5 rounded text-primary">{inv.deeplink}</code>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </TabsContent>
 
                     {/* 2. Contextual Guidance & Interventions Tab (Phase 10G) */}

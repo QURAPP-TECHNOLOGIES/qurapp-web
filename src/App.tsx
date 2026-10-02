@@ -93,6 +93,10 @@ const App = () => (
                 path="/qurai/router"
                 element={<Navigate to="/dashboard?tab=qurai-router" replace />}
               />
+              <Route
+                path="/moderation"
+                element={<Navigate to="/dashboard?tab=moderation" replace />}
+              />
 
               {/* Catch-all 404 Route */}
               <Route path="*" element={<NotFound />} />
