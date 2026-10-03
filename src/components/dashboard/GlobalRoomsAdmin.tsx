@@ -523,12 +523,26 @@ export function GlobalRoomsAdmin() {
                         <Badge variant="outline" className="text-[10px]">
                           {room.roomType}
                         </Badge>
-                        <Badge
-                          variant={room.status === 'active' ? 'default' : 'outline'}
-                          className={`text-[10px] capitalize ${room.status === 'active' ? 'bg-emerald-600 text-white' : ''}`}
-                        >
-                          {room.status}
-                        </Badge>
+                        {isColdStart ? (
+                          room.participantCount > 0 ? (
+                            <Badge className="text-[10px] bg-emerald-600 text-white gap-1 animate-pulse">
+                              <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                              Live ({room.participantCount} joined)
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] bg-indigo-500/10 text-indigo-400 border-indigo-500/20 gap-1">
+                              <Moon className="h-2.5 w-2.5" />
+                              Idle / Paused
+                            </Badge>
+                          )
+                        ) : (
+                          <Badge
+                            variant={room.status === 'active' ? 'default' : 'outline'}
+                            className={`text-[10px] capitalize ${room.status === 'active' ? 'bg-emerald-600 text-white' : ''}`}
+                          >
+                            {room.status}
+                          </Badge>
+                        )}
                         {isCurrentlyAuditing && (
                           <Badge className="text-[10px] bg-sky-500 text-white animate-pulse gap-1">
                             <Headphones className="h-3 w-3" />
@@ -550,58 +564,56 @@ export function GlobalRoomsAdmin() {
 
                     {/* Operational Controls */}
                     <div className="flex items-center gap-1.5 self-end md:self-center shrink-0">
-                      {/* Silent Debug Join */}
-                      <Button
-                        size="sm"
-                        variant={isCurrentlyAuditing ? "default" : "outline"}
-                        className={`h-8 text-xs gap-1.5 ${isCurrentlyAuditing ? 'bg-sky-600 hover:bg-sky-500 text-white' : 'border-sky-500/30 text-sky-500 hover:bg-sky-500/10'}`}
-                        disabled={actionLoading === `${room.id}-join`}
-                        onClick={() => isCurrentlyAuditing ? handleLeaveSilent() : handleSilentJoin(room)}
-                      >
-                        <Headphones className="h-3.5 w-3.5" />
-                        {isCurrentlyAuditing ? "Stop Audit" : "Silent Join"}
-                      </Button>
+                      {isCurrentlyAuditing || room.participantCount > 0 ? (
+                        <>
+                          {/* Silent Debug Join (Only for ongoing rooms) */}
+                          <Button
+                            size="sm"
+                            variant={isCurrentlyAuditing ? "default" : "outline"}
+                            className={`h-8 text-xs gap-1.5 ${isCurrentlyAuditing ? 'bg-sky-600 hover:bg-sky-500 text-white' : 'border-sky-500/30 text-sky-500 hover:bg-sky-500/10'}`}
+                            disabled={actionLoading === `${room.id}-join`}
+                            onClick={() => isCurrentlyAuditing ? handleLeaveSilent() : handleSilentJoin(room)}
+                          >
+                            <Headphones className="h-3.5 w-3.5" />
+                            {isCurrentlyAuditing ? "Stop Audit" : "Silent Join"}
+                          </Button>
 
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-xs gap-1"
-                        disabled={actionLoading === `${room.id}-wake`}
-                        onClick={() => handleStreamAction(room.id, 'wake')}
-                      >
-                        <Play className="h-3 w-3 text-emerald-500" />
-                        Wake
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-xs gap-1"
-                        disabled={actionLoading === `${room.id}-sleep`}
-                        onClick={() => handleStreamAction(room.id, 'sleep')}
-                      >
-                        <Moon className="h-3 w-3 text-indigo-400" />
-                        Sleep
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 text-xs gap-1"
-                        disabled={actionLoading === `${room.id}-pause`}
-                        onClick={() => handleStreamAction(room.id, 'pause')}
-                      >
-                        <Pause className="h-3 w-3 text-amber-500" />
-                        Pause
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 text-xs gap-1"
-                        disabled={actionLoading === `${room.id}-resume`}
-                        onClick={() => handleStreamAction(room.id, 'resume')}
-                      >
-                        <Volume2 className="h-3 w-3 text-sky-500" />
-                        Resume
-                      </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs gap-1"
+                            disabled={actionLoading === `${room.id}-sleep`}
+                            onClick={() => handleStreamAction(room.id, 'sleep')}
+                          >
+                            <Moon className="h-3 w-3 text-indigo-400" />
+                            Sleep
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 text-xs gap-1"
+                            disabled={actionLoading === `${room.id}-pause`}
+                            onClick={() => handleStreamAction(room.id, 'pause')}
+                          >
+                            <Pause className="h-3 w-3 text-amber-500" />
+                            Pause
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 text-xs gap-1"
+                            disabled={actionLoading === `${room.id}-resume`}
+                            onClick={() => handleStreamAction(room.id, 'resume')}
+                          >
+                            <Volume2 className="h-3 w-3 text-sky-500" />
+                            Resume
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic px-2">
+                          Idle (Auto-wakes on join)
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -684,16 +696,6 @@ export function GlobalRoomsAdmin() {
               </div>
 
               {/* Stream Remote Actions */}
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 text-xs gap-1"
-                disabled={actionLoading === `${activeAudioRoom.id}-wake`}
-                onClick={() => handleStreamAction(activeAudioRoom.id, 'wake')}
-              >
-                <Play className="h-3 w-3 text-emerald-500" />
-                Wake
-              </Button>
               <Button
                 size="sm"
                 variant="outline"
