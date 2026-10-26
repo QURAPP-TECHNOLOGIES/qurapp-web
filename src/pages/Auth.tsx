@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Lock, Phone, ArrowLeft, ArrowRight, Shield, CheckCircle2 } from "lucide-react";
+import { Lock, Phone, ArrowLeft, ArrowRight, Shield, CheckCircle2, RefreshCw, MessageSquare, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,13 +10,15 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { toast } from "sonner";
 import logoOnLight from "@/assets/logo-onlight.png";
 import { useSEO } from "@/hooks/useSEO";
+import { apiGatewayUrl } from "@/lib/api";
 
 // Validation schemas
 const phoneSchema = z.object({
-  phone: z.string().regex(/^\+?[1-9]\d{9,14}$/, { message: "Please enter a valid phone number" }),
+  phone: z.string().regex(/^\+?[1-9]\d{9,14}$/, { message: "Please enter a valid E.164 phone number (e.g. +1234567890)" }),
 });
 
 type AuthStep = "phone" | "otp" | "success";
+type DeliveryChannel = "whatsapp" | "sms";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -24,8 +26,8 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useSEO({
-    title: "Login",
-    description: "Sign in to your QurApp account to access your Islamic community and continue your spiritual journey.",
+    title: "Admin Sign In",
+    description: "Sign in to the QurApp administrative management console.",
     url: "/auth",
     noindex: true,
   });
@@ -33,17 +35,27 @@ const Auth = () => {
   // Form states
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
+  const [channel, setChannel] = useState<DeliveryChannel>("whatsapp");
+  const [dispatchedChannel, setDispatchedChannel] = useState<string>("whatsapp");
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
 
   // Error states
   const [errors, setErrors] = useState<{ phone?: string; otp?: string }>({});
 
-  const SIMULATED_OTP = "123456";
+  // Countdown timer for OTP resend cooldown
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
 
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePhoneSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setErrors({});
 
-    const result = phoneSchema.safeParse({ phone });
+    const result = phoneSchema.safeParse({ phone: phone.trim() });
     if (!result.success) {
       setErrors({ phone: result.error.errors[0].message });
       return;
@@ -51,25 +63,35 @@ const Auth = () => {
 
     setIsLoading(true);
     try {
-      const apiGatewayUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
       const res = await fetch(`${apiGatewayUrl}/api/v1/auth/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: phone }),
+        body: JSON.stringify({
+          phoneNumber: phone.trim(),
+          channel,
+          preferredChannel: channel
+        }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || errorData.error || "Failed to send OTP");
+        throw new Error(data.message || data.error || "Failed to send verification code");
       }
 
-      toast.success(`OTP sent to ${phone}.`);
+      const activeChannel = data.channel || channel;
+      setDispatchedChannel(activeChannel);
+      setResendCooldown(data.canResendInSeconds || 30);
       setStep("otp");
-    } catch (error: any) {
+
+      const channelName = activeChannel === "whatsapp" ? "WhatsApp" : "SMS";
+      toast.success(`Verification code sent via ${channelName} to ${phone}`);
+    } catch (error: unknown) {
       console.error("OTP Request Error:", error);
-      let friendlyMessage = error.message;
-      if (error.message === "Failed to fetch" || error.name === "TypeError") {
-        friendlyMessage = "Connection error: Could not reach the authentication server. Please check if the API server is online.";
+      const isError = error instanceof Error;
+      let friendlyMessage = isError ? error.message : "Failed to send verification code";
+      if (isError && (error.message === "Failed to fetch" || error.name === "TypeError")) {
+        friendlyMessage = "Connection error: Could not reach the authentication server. Please check your internet connection.";
       }
       setErrors({ phone: friendlyMessage });
       toast.error(friendlyMessage);
@@ -78,33 +100,87 @@ const Auth = () => {
     }
   };
 
-  const handleOtpVerify = async () => {
+  const handleResendOtp = async (targetChannel?: DeliveryChannel) => {
+    if (resendCooldown > 0 || isLoading) return;
+
+    const channelToUse = targetChannel || (channel as DeliveryChannel);
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      const res = await fetch(`${apiGatewayUrl}/api/v1/auth/request-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phoneNumber: phone.trim(),
+          channel: channelToUse,
+          preferredChannel: channelToUse
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.message || data.error || "Failed to resend code");
+      }
+
+      const activeChannel = data.channel || channelToUse;
+      setChannel(channelToUse);
+      setDispatchedChannel(activeChannel);
+      setResendCooldown(data.canResendInSeconds || 30);
+
+      const channelName = activeChannel === "whatsapp" ? "WhatsApp" : "SMS";
+      toast.success(`New verification code sent via ${channelName}`);
+    } catch (error: unknown) {
+      console.error("OTP Resend Error:", error);
+      const friendlyMessage = error instanceof Error ? error.message : "Could not resend code. Please try again later.";
+      setErrors({ otp: friendlyMessage });
+      toast.error(friendlyMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOtpVerify = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
     if (otp.length !== 6) {
       setErrors({ otp: "Please enter the complete 6-digit code" });
       return;
     }
 
     setIsLoading(true);
+    setErrors({});
+
     try {
-      // In development/demo, we might still accept SIMULATED_OTP but usually we go to backend
-      const apiGatewayUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
       const res = await fetch(`${apiGatewayUrl}/api/v1/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: phone, otp }),
+        body: JSON.stringify({
+          phoneNumber: phone.trim(),
+          otp: otp.trim()
+        }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || errorData.error || "Invalid OTP code");
+        const errorMsg = data.message || data.error || "Invalid verification code";
+        throw new Error(errorMsg);
       }
 
-      const data = await res.json();
+      // Check role permissions: must be Administrator to enter console
+      const userRole = data.role || data.user?.role || (Array.isArray(data.roles) ? data.roles[0] : null) || "";
+      const normalizedRole = typeof userRole === "string" ? userRole.trim().toLowerCase() : "";
+      const isAdmin = ["admin", "super_admin", "superadmin", "administrator"].includes(normalizedRole);
 
-      // Store tokens
+      if (!isAdmin) {
+        throw new Error("Access restricted: This portal is exclusively for QurApp administrators. Your account does not have administrative permissions.");
+      }
+
+      // Store authenticated credentials
       const accessToken = data.token?.accessToken || data.token || data.accessToken;
       const refreshToken = data.token?.refreshToken || data.refreshToken;
-      const userRole = data.role || data.user?.role || (Array.isArray(data.roles) ? data.roles[0] : null) || "Admin";
 
       if (accessToken) {
         localStorage.setItem("token", accessToken);
@@ -112,20 +188,21 @@ const Auth = () => {
       if (refreshToken) {
         localStorage.setItem("refreshToken", refreshToken);
       }
-      localStorage.setItem("role", userRole);
+      localStorage.setItem("role", userRole || "Admin");
 
       setStep("success");
-      toast.success("Login successful!");
+      toast.success("Welcome back, Administrator!");
 
-      // Redirect to dashboard after showing success
+      // Transition smoothly into management dashboard
       setTimeout(() => {
         navigate("/dashboard");
-      }, 1500);
-    } catch (error: any) {
+      }, 1200);
+    } catch (error: unknown) {
       console.error("OTP Verification Error:", error);
-      let friendlyMessage = error.message;
-      if (error.message === "Failed to fetch" || error.name === "TypeError") {
-        friendlyMessage = "Connection error: Could not reach the authentication server. Please check if the API server is online.";
+      const isError = error instanceof Error;
+      let friendlyMessage = isError ? error.message : "Verification failed";
+      if (isError && (error.message === "Failed to fetch" || error.name === "TypeError")) {
+        friendlyMessage = "Connection error: Could not reach the authentication server. Please check your network connection.";
       }
       setErrors({ otp: friendlyMessage });
       toast.error(friendlyMessage);
@@ -181,8 +258,10 @@ const Auth = () => {
                   <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Shield className="h-8 w-8 text-primary" />
                   </div>
-                  <h1 className="text-2xl font-bold text-foreground mb-2">Sign In</h1>
-                  <p className="text-muted-foreground">Enter your phone number to receive a verification code</p>
+                  <h1 className="text-2xl font-bold text-foreground mb-2">Admin Sign In</h1>
+                  <p className="text-muted-foreground text-sm">
+                    Enter your registered administrator phone number to receive a secure one-time verification code.
+                  </p>
                 </div>
 
                 <form onSubmit={handlePhoneSubmit} className="space-y-4">
@@ -192,7 +271,12 @@ const Auth = () => {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="phone"
+                        name="tel"
                         type="tel"
+                        autoComplete="tel"
+                        inputMode="tel"
+                        enterKeyHint="next"
+                        required
                         placeholder="+1234567890"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
@@ -204,17 +288,48 @@ const Auth = () => {
                     )}
                   </div>
 
+                  {/* Channel Selection */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Delivery Channel</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setChannel("whatsapp")}
+                        className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-medium transition-all ${
+                          channel === "whatsapp"
+                            ? "border-primary bg-primary/10 text-primary shadow-sm"
+                            : "border-border hover:bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5 text-emerald-500" />
+                        WhatsApp (Instant)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setChannel("sms")}
+                        className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-medium transition-all ${
+                          channel === "sms"
+                            ? "border-primary bg-primary/10 text-primary shadow-sm"
+                            : "border-border hover:bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <Smartphone className="h-3.5 w-3.5 text-primary" />
+                        Direct SMS
+                      </button>
+                    </div>
+                  </div>
+
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full mt-2"
                     variant="primary"
                     size="lg"
-                    disabled={isLoading}
+                    disabled={isLoading || !phone.trim()}
                   >
                     {isLoading ? (
                       <span className="flex items-center gap-2">
                         <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        Sending code...
+                        Sending Code...
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
@@ -225,13 +340,13 @@ const Auth = () => {
                   </Button>
                 </form>
 
-                <p className="mt-4 text-xs text-center text-muted-foreground">
-                  We'll send a 6-digit code to verify your identity
+                <p className="mt-5 text-xs text-center text-muted-foreground">
+                  Secured with real-time cryptographic OTP validation.
                 </p>
               </motion.div>
             )}
 
-            {/* Step 3: OTP Verification */}
+            {/* Step 2: OTP Verification */}
             {step === "otp" && (
               <motion.div
                 key="otp"
@@ -241,11 +356,16 @@ const Auth = () => {
                 exit="exit"
               >
                 <button
-                  onClick={() => setStep("phone")}
+                  type="button"
+                  onClick={() => {
+                    setStep("phone");
+                    setOtp("");
+                    setErrors({});
+                  }}
                   className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Back
+                  Change Phone Number
                 </button>
 
                 <div className="text-center mb-6">
@@ -253,16 +373,21 @@ const Auth = () => {
                     <Lock className="h-8 w-8 text-primary" />
                   </div>
                   <h1 className="text-2xl font-bold text-foreground mb-2">Enter Verification Code</h1>
-                  <p className="text-muted-foreground">
-                    We sent a 6-digit code to <span className="font-medium text-foreground">{phone}</span>
+                  <p className="text-muted-foreground text-sm">
+                    Enter the 6-digit code dispatched via{" "}
+                    <span className="font-semibold text-foreground">
+                      {dispatchedChannel === "whatsapp" ? "WhatsApp" : "SMS"}
+                    </span>{" "}
+                    to <span className="font-semibold text-foreground">{phone}</span>
                   </p>
                 </div>
 
-                <div className="space-y-6">
+                <form onSubmit={handleOtpVerify} className="space-y-6">
                   <div className="flex justify-center">
                     <InputOTP
                       maxLength={6}
                       value={otp}
+                      autoFocus
                       onChange={(value) => {
                         setOtp(value);
                         setErrors({});
@@ -284,7 +409,7 @@ const Auth = () => {
                   )}
 
                   <Button
-                    onClick={handleOtpVerify}
+                    type="submit"
                     className="w-full"
                     variant="primary"
                     size="lg"
@@ -293,35 +418,52 @@ const Auth = () => {
                     {isLoading ? (
                       <span className="flex items-center gap-2">
                         <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        Verifying...
+                        Verifying Code...
                       </span>
                     ) : (
                       "Verify & Sign In"
                     )}
                   </Button>
 
-                  <div className="text-center">
-                    <button
-                      className="text-sm text-primary hover:underline"
-                      onClick={() => {
-                        toast.info(`Demo OTP: ${SIMULATED_OTP}`);
-                      }}
-                    >
-                      Didn't receive code? Resend
-                    </button>
+                  {/* Resend actions with real countdown */}
+                  <div className="text-center space-y-2 pt-2 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground">Didn't receive the verification code?</p>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                      {resendCooldown > 0 ? (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
+                          <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground/60" />
+                          Resend available in {resendCooldown}s
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleResendOtp("whatsapp")}
+                            disabled={isLoading}
+                            className="text-xs text-primary font-medium hover:underline flex items-center gap-1"
+                          >
+                            <MessageSquare className="h-3 w-3 text-emerald-500" />
+                            Resend via WhatsApp
+                          </button>
+                          <span className="text-muted-foreground text-xs">•</span>
+                          <button
+                            type="button"
+                            onClick={() => handleResendOtp("sms")}
+                            disabled={isLoading}
+                            className="text-xs text-primary font-medium hover:underline flex items-center gap-1"
+                          >
+                            <Smartphone className="h-3 w-3" />
+                            Send via SMS
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-
-                {/* Demo hint */}
-                <div className="mt-6 p-3 bg-accent/10 rounded-lg border border-accent/20">
-                  <p className="text-xs text-center text-accent-foreground/80">
-                    <strong>Demo Mode:</strong> Use code <span className="font-mono font-bold">{SIMULATED_OTP}</span> to continue
-                  </p>
-                </div>
+                </form>
               </motion.div>
             )}
 
-            {/* Step 4: Success */}
+            {/* Step 3: Success */}
             {step === "success" && (
               <motion.div
                 key="success"
@@ -339,9 +481,12 @@ const Auth = () => {
                 >
                   <CheckCircle2 className="h-10 w-10 text-accent" />
                 </motion.div>
-                <h1 className="text-2xl font-bold text-foreground mb-2">Welcome Back!</h1>
-                <p className="text-muted-foreground mb-4">You've successfully signed in</p>
-                <p className="text-sm text-muted-foreground">Redirecting you to the app...</p>
+                <h1 className="text-2xl font-bold text-foreground mb-2">Access Granted</h1>
+                <p className="text-muted-foreground mb-4">Administrator credentials authenticated successfully.</p>
+                <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+                  <span className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  Redirecting to management dashboard...
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
