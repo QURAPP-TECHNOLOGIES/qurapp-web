@@ -31,6 +31,7 @@ import { EmailManagement } from "@/components/dashboard/EmailManagement";
 import { NotificationManagement } from "@/components/dashboard/NotificationManagement";
 import { QuranAssetsUpload } from "@/components/dashboard/QuranAssetsUpload";
 import { QuranAssetsList } from "@/components/dashboard/QuranAssetsList";
+import { MushafReviewQueue } from "@/components/dashboard/MushafReviewQueue";
 import { GalleryUpload } from "@/components/dashboard/GalleryUpload";
 import { GalleryList } from "@/components/dashboard/GalleryList";
 import { HisnulMuslimAudio } from "@/components/dashboard/HisnulMuslimAudio";
@@ -497,13 +498,18 @@ export default function Dashboard() {
               className="space-y-6"
             >
               <Tabs defaultValue="list" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
+                <TabsList className="grid w-full grid-cols-3 max-w-2xl mb-6">
                   <TabsTrigger value="list">Manage Assets</TabsTrigger>
+                  <TabsTrigger value="review">Mushaf Review Queue</TabsTrigger>
                   <TabsTrigger value="upload">Upload New Asset</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="list" className="mt-0">
                   <QuranAssetsList />
+                </TabsContent>
+
+                <TabsContent value="review" className="mt-0">
+                  <MushafReviewQueue />
                 </TabsContent>
 
                 <TabsContent value="upload" className="mt-0">
